@@ -7,7 +7,8 @@
   "rust-analyzer.diagnostics.experimental.enable": false,
   "rust-analyzer.diagnostics.disabled": [],
   "rust-analyzer.linkedProjects": [
+    "example/src-tauri/Cargo.toml",
     "taurpc/Cargo.toml",
-    "example/src-tauri/Cargo.toml"
+    "taurpc/taurpc-macros/Cargo.toml"
   ]
 }
