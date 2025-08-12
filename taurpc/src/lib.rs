@@ -287,14 +287,16 @@ impl<R: Runtime> Router<R> {
     /// ```
     pub fn into_handler(self) -> impl Fn(Invoke<R>) -> bool {
         #[cfg(debug_assertions)] // Only export in development builds
-        export_types(
+        match export_types(
             self.export_path,
             self.args_map_json.clone(),
             self.export_config.clone(),
             self.fns_map.clone(),
             self.types.clone(),
-        )
-        .unwrap();
+        ) {
+            Ok(_) => (),
+            Err(e) => eprintln!("Error exporting types: {:?}", e),
+        };
 
         move |invoke: Invoke<R>| self.on_command(invoke)
     }
