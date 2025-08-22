@@ -20,17 +20,16 @@ rustdoc-args = ["--cfg", "docsrs"]
 taurpc-macros = { path = "./taurpc-macros", version = "=0.5.1" }
 
 itertools = "0.14.0"
-tauri = { version = "2.5.1", features = ["specta"] }
+tauri = { version = "2.8.2", features = ["specta"] }
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = { version = "1.0.140", features = ["preserve_order"] }
-tokio = { version = "1.45.1", features = ["full"] }
+serde_json = { version = "1.0.143", features = ["preserve_order"] }
+tokio = { version = "1.45.2", features = ["full"] }
 
 specta = { version = "=2.0.0-rc.22", features = ["export", "function"] }
 specta-serde = { version = "0.0.9", features = [] }
 specta-typescript = { version = "0.0.9", features = ["function"] }
-specta-macros = { version = "2.0.0-rc.18" }
 heck = "0.5.0"
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 
 [workspace]
 members = ["taurpc-macros"]

@@ -1,8 +1,8 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use heck::ToLowerCamelCase;
 use itertools::Itertools;
-use specta::datatype::{Function, FunctionResultVariant};
 use specta::TypeCollection;
+use specta::datatype::{Function, FunctionResultVariant};
 use specta_typescript as ts;
 use specta_typescript::Typescript;
 use std::collections::BTreeMap;
@@ -54,22 +54,35 @@ pub(super) fn export_types(
     }
 
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .context("Failed to create directory for exported bindings")?;
+        match std::fs::create_dir_all(parent) {
+            Ok(_) => (),
+            Err(e) => {
+                println!("Failed to create directory for exported bindings: {:?}", e);
+            }
+        }
     }
 
     // Export `types_map` containing all referenced types.
     type_map.remove(<tauri::ipc::Channel<()> as specta::NamedType>::sid());
-    let types = export_config
+    let types = match export_config
         .export(&type_map)
-        .context("Failed to generate types with specta")?;
+        .context("Failed to generate types with specta")
+    {
+        Ok(types) => types,
+        Err(e) => {
+            println!("Failed to generate types with specta: {:?}", e);
+            "".to_string()
+        }
+    };
 
     // Put headers always at the top of the file, followed by the module imports.
     let framework_header = export_config.framework_header.as_ref();
     let body = match types.split_once(framework_header) {
         Some((_, body)) => body,
         None => {
-            eprintln!("Failed to split types with framework header");
+            println!(
+                "Failed to split types with framework header\nbody will be empty string\ntaurpc will continue with router creation."
+            );
             ""
         }
     };
@@ -111,7 +124,7 @@ pub(super) fn export_types(
     if export_config.formatter.is_some() {
         match export_config.format(path) {
             Ok(_) => (),
-            Err(e) => eprintln!("Error formatting bindings file: {}", e),
+            Err(e) => println!("Error formatting bindings file: {}", e),
         }
     }
     Ok(())
@@ -183,7 +196,11 @@ fn generate_function(
         None => "void".to_string(),
     };
 
-    let name = function.name().split_once("_taurpc_fn__").unwrap().1;
+    let name = match function.name().split_once("_taurpc_fn__") {
+        Some(thing) => thing.1,
+        None => return Err(anyhow::anyhow!("Function name is not valid")),
+    };
+
     Ok(format!(r#"{name}: ({args}) => Promise<{return_ty}>"#))
 }
 
