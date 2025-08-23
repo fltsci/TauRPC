@@ -20,10 +20,7 @@ use tauri::{AppHandle, Emitter, EventTarget, Runtime};
 
 pub use taurpc_macros::{ipc_type, procedures, resolvers};
 
-#[cfg(debug_assertions)]
 mod export;
-#[cfg(debug_assertions)]
-use export::export_types;
 
 /// A trait, which is automatically implemented by `#[taurpc::procedures]`, that is used for handling incoming requests
 /// and the type generation.
@@ -96,20 +93,22 @@ where
         H::PATH_PREFIX.to_string(),
         H::collect_fn_types(&mut type_map),
     )]);
-    #[cfg(debug_assertions)] // Only export in development builds
-    match export_types(
-        H::EXPORT_PATH,
-        args_map,
-        specta_typescript::Typescript::default(),
-        functions,
-        type_map,
-    ) {
-        Ok(_) => (),
-        Err(e) => println!(
-            "Error exporting types: {:?}\ntaurpc will continue with router creation.",
-            e
-        ),
-    };
+    if tauri::is_dev() {
+        // Only export in development builds
+        match export::export_types(
+            H::EXPORT_PATH,
+            args_map,
+            specta_typescript::Typescript::default(),
+            functions,
+            type_map,
+        ) {
+            Ok(_) => (),
+            Err(e) => println!(
+                "Error exporting types: {:?}\ntaurpc will continue with router creation.",
+                e
+            ),
+        };
+    }
     move |invoke: Invoke<R>| {
         procedures.clone().handle_incoming_request(invoke);
         true
@@ -294,20 +293,22 @@ impl<R: Runtime> Router<R> {
     ///      .expect("error while running tauri application");
     /// ```
     pub fn into_handler(self) -> impl Fn(Invoke<R>) -> bool {
-        #[cfg(all(debug_assertions))] // Only export in development builds
-        match export_types(
-            self.export_path,
-            self.args_map_json.clone(),
-            self.export_config.clone(),
-            self.fns_map.clone(),
-            self.types.clone(),
-        ) {
-            Ok(_) => (),
-            Err(e) => println!(
-                "Error exporting types: {:?}\ntaurpc will continue with router creation.",
-                e
-            ),
-        };
+        if tauri::is_dev() {
+            // Only export in development builds
+            match export::export_types(
+                self.export_path,
+                self.args_map_json.clone(),
+                self.export_config.clone(),
+                self.fns_map.clone(),
+                self.types.clone(),
+            ) {
+                Ok(_) => (),
+                Err(e) => println!(
+                    "Error exporting types: {:?}\ntaurpc will continue with router creation.",
+                    e
+                ),
+            };
+        }
 
         move |invoke: Invoke<R>| self.on_command(invoke)
     }
