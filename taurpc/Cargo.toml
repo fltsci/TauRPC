@@ -1,7 +1,7 @@
 [package]
 name = "taurpc"
 authors = ["MatsDK"]
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 description = "A type-safe IPC layer for tauri commands"
 documentation = "https://docs.rs/taurpc"
@@ -17,19 +17,19 @@ rustc-args = ["--cfg", "docsrs"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-taurpc-macros = { path = "./taurpc-macros", version = "=0.5.1" }
+taurpc-macros = { path = "./taurpc-macros", version = "=0.5.2" }
 
 itertools = "0.14.0"
-tauri = { version = "2.8.2", features = ["specta"] }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = { version = "1.0.143", features = ["preserve_order"] }
-tokio = { version = "1.45.2", features = ["full"] }
+tauri = { version = "2.8.5", features = ["specta"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.145", features = ["preserve_order"] }
+tokio = { version = "1.48.0", features = ["full"] }
 
 specta = { version = "=2.0.0-rc.22", features = ["export", "function"] }
 specta-serde = { version = "0.0.9", features = [] }
 specta-typescript = { version = "0.0.9", features = ["function"] }
 heck = "0.5.0"
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 
 [workspace]
 members = ["taurpc-macros"]

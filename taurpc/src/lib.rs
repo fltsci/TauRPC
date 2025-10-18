@@ -21,7 +21,7 @@ use tauri::{AppHandle, Emitter, EventTarget, Runtime};
 pub use taurpc_macros::{ipc_type, procedures, resolvers};
 
 mod export;
-
+use export::export_types;
 /// A trait, which is automatically implemented by `#[taurpc::procedures]`, that is used for handling incoming requests
 /// and the type generation.
 pub trait TauRpcHandler<R: Runtime>: Sized {
@@ -93,9 +93,10 @@ where
         H::PATH_PREFIX.to_string(),
         H::collect_fn_types(&mut type_map),
     )]);
+
+    // Only export in development mode
     if tauri::is_dev() {
-        // Only export in development builds
-        match export::export_types(
+        match export_types(
             H::EXPORT_PATH,
             args_map,
             specta_typescript::Typescript::default(),
@@ -293,9 +294,9 @@ impl<R: Runtime> Router<R> {
     ///      .expect("error while running tauri application");
     /// ```
     pub fn into_handler(self) -> impl Fn(Invoke<R>) -> bool {
+        // Only export in development mode
         if tauri::is_dev() {
-            // Only export in development builds
-            match export::export_types(
+           match export_types(
                 self.export_path,
                 self.args_map_json.clone(),
                 self.export_config.clone(),
