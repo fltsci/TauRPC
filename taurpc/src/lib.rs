@@ -296,7 +296,7 @@ impl<R: Runtime> Router<R> {
     pub fn into_handler(self) -> impl Fn(Invoke<R>) -> bool {
         // Only export in development mode
         if tauri::is_dev() {
-           match export_types(
+            match export_types(
                 self.export_path,
                 self.args_map_json.clone(),
                 self.export_config.clone(),
