@@ -13,10 +13,9 @@ readme = "README.md"
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0.15", features = ["full"] }
-quote = "1.0.26"
-proc-macro2 = "1.0.56"
+syn = { version = "2.0.111", features = ["full"] }
+quote = "1.0.42"
+proc-macro2 = "1.0.103"
 serde = { version = "1", features = ["derive"] }
 
-serde_json = { version = "1.0.96", features = ["preserve_order"] }
-# convert_case = "0.6"
+serde_json = { version = "1.0.145", features = ["preserve_order"] }

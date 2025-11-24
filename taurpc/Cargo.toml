@@ -20,7 +20,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 taurpc-macros = { path = "./taurpc-macros", version = "=0.5.2" }
 
 itertools = "0.14.0"
-tauri = { version = "2.8.5", features = ["specta"] }
+tauri = { version = "2.9.3", features = ["specta"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 tokio = { version = "1.48.0", features = ["full"] }
