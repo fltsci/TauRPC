@@ -116,7 +116,6 @@ const nestedProxy = (
             return handleProxyCall(
               nested_path.join('.'),
               args,
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               args_map[method_name]!,
             )
           },

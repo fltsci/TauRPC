@@ -1,8 +1,8 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use heck::ToLowerCamelCase;
 use itertools::Itertools;
-use specta::datatype::{Function, FunctionResultVariant};
 use specta::TypeCollection;
+use specta::datatype::{Function, FunctionResultVariant};
 use specta_typescript as ts;
 use specta_typescript::Typescript;
 use std::collections::BTreeMap;
@@ -19,14 +19,19 @@ static PACKAGE_JSON: &str = r#"
 
 static BOILERPLATE_TS_IMPORT: &str = r#"
 
-import { createTauRPCProxy as createProxy, type InferCommandOutput } from 'taurpc'
+import { createTauRPCProxy as createProxy, type InferCommandOutput } from '@fltsci/taurpc'
+
 type TAURI_CHANNEL<T> = (response: T) => void
 "#;
 
 static BOILERPLATE_TS_EXPORT: &str = r#"
 
-export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP)
-export type { InferCommandOutput }
+const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP)
+
+export {
+  type InferCommandOutput,
+  createTauRPCProxy
+}
 "#;
 
 /// Export the generated TS types with the code necessary for generating the client proxy.
@@ -49,22 +54,35 @@ pub(super) fn export_types(
     }
 
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .context("Failed to create directory for exported bindings")?;
+        match std::fs::create_dir_all(parent) {
+            Ok(_) => (),
+            Err(e) => {
+                println!("Failed to create directory for exported bindings: {:?}", e);
+            }
+        }
     }
 
     // Export `types_map` containing all referenced types.
     type_map.remove(<tauri::ipc::Channel<()> as specta::NamedType>::sid());
-    let types = export_config
+    let types = match export_config
         .export(&type_map)
-        .context("Failed to generate types with specta")?;
+        .context("Failed to generate types with specta")
+    {
+        Ok(types) => types,
+        Err(e) => {
+            println!("Failed to generate types with specta: {:?}", e);
+            "".to_string()
+        }
+    };
 
     // Put headers always at the top of the file, followed by the module imports.
     let framework_header = export_config.framework_header.as_ref();
     let body = match types.split_once(framework_header) {
         Some((_, body)) => body,
         None => {
-            eprintln!("Failed to split types with framework header");
+            println!(
+                "Failed to split types with framework header\nbody will be empty string\ntaurpc will continue with router creation."
+            );
             ""
         }
     };
@@ -103,9 +121,12 @@ pub(super) fn export_types(
     }
 
     // Format the output file if the user specified a formatter on `export_config`.
-    export_config.format(path).context(
-        "Failed to format exported bindings, make sure you have the correct formatter installed",
-    )?;
+    if export_config.formatter.is_some() {
+        match export_config.format(path) {
+            Ok(_) => (),
+            Err(e) => println!("Error formatting bindings file: {}", e),
+        }
+    }
     Ok(())
 }
 
@@ -121,13 +142,17 @@ fn generate_functions_router(
                 path_functions.iter().map(|f| (f.name(), f)).collect();
             function_names_and_funcs.sort_by(|a, b| a.0.cmp(b.0));
 
-            let functions = function_names_and_funcs
+            let functions = match function_names_and_funcs
                 .iter()
                 .map(|(_, function)| generate_function(function, export_config, &type_map))
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| eprintln!("Error generating functions: {:?}", e))
-                .unwrap_or_default()
-                .join(", \n");
+            {
+                Ok(functions) => functions.join(", \n"),
+                Err(e) => {
+                    eprintln!("Error generating functions: {:?}", e);
+                    "".to_string()
+                }
+            };
 
             Some(format!(r#""{path}": {{{functions}}}"#))
         })
@@ -171,7 +196,11 @@ fn generate_function(
         None => "void".to_string(),
     };
 
-    let name = function.name().split_once("_taurpc_fn__").unwrap().1;
+    let name = match function.name().split_once("_taurpc_fn__") {
+        Some(thing) => thing.1,
+        None => return Err(anyhow::anyhow!("Function name is not valid")),
+    };
+
     Ok(format!(r#"{name}: ({args}) => Promise<{return_ty}>"#))
 }
 

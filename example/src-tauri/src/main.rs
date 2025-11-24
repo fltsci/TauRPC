@@ -2,10 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{sync::Arc, time::Duration};
-use tauri::{ipc::Channel, AppHandle, EventTarget, Manager, Runtime, WebviewWindow, Window};
+use tauri::{AppHandle, EventTarget, Manager, Runtime, WebviewWindow, Window, ipc::Channel};
 use taurpc::Router;
 use tokio::{
-    sync::{oneshot, Mutex},
+    sync::{Mutex, oneshot},
     time::sleep,
 };
 
@@ -133,8 +133,11 @@ impl Api for ApiImpl {
     }
 
     async fn test_result(self, user: User) -> Result<User, Error> {
-        Err(Error::Other("Some error message".to_string()))
-        // Ok(user)
+        if user.uid == 1 {
+            Err(Error::Other("Some error message".to_string()))
+        } else {
+            Ok(user)
+        }
     }
 
     async fn with_sleep(self) {

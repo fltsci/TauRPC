@@ -1,10 +1,10 @@
 {
-  "name": "taurpc",
+  "name": "@fltsci/taurpc",
   "version": "1.8.1",
-  "description": "",
+  "description": "Type-safe IPC layer for Tauri commands and events; forked from MatsDK/TauRPC",
   "main": "dist/index.cjs",
   "repository": {
-    "url": "https://github.com/MatsDK/TauRPC",
+    "url": "https://github.com/fltsci/TauRPC",
     "type": "git"
   },
   "type": "module",
@@ -32,22 +32,23 @@
   "author": "MatsDK",
   "license": "ISC",
   "devDependencies": {
-    "@changesets/changelog-github": "^0.4.8",
-    "@changesets/cli": "^2.26.1",
-    "@types/eslint": "^8.40.0",
-    "@types/node": "^20.2.5",
-    "@typescript-eslint/eslint-plugin": "^5.59.7",
-    "@typescript-eslint/parser": "^5.59.7",
-    "dprint": "^0.36.1",
-    "eslint": "^8.41.0",
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.7",
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "dprint": "^0.50.2",
+    "eslint": "^9.39.1",
     "eslint-plugin-dprint": "^0.4.0",
+    "globals": "^16.5.0",
     "npm-run-all": "^4.1.5",
-    "tsup": "^6.7.0",
-    "tsx": "^3.12.7",
-    "typescript": "^5.0.4"
+    "tsup": "^8.5.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0",
+    "vitest": "^4.0.13"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.2"
+    "@tauri-apps/api": "^2.9.0"
   },
   "tsup": {
     "entry": [
@@ -66,5 +67,5 @@
     "splitting": true,
     "clean": true
   },
-  "packageManager": "pnpm@9.12.0"
+  "packageManager": "pnpm@10.23.0"
 }

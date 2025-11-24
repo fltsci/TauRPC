@@ -2,9 +2,9 @@ use crate::args::{parse_arg_key, parse_args};
 use crate::{method_fut_ident, proc::IpcMethod};
 
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use std::collections::BTreeMap;
-use syn::{parse_quote, Attribute, Generics, Ident, Type, Visibility};
+use syn::{Attribute, Generics, Ident, Type, Visibility, parse_quote};
 
 pub struct ProceduresGenerator<'a> {
     pub trait_ident: &'a Ident,
@@ -280,6 +280,7 @@ impl ProceduresGenerator<'_> {
                     .iter()
                     .filter(|arg| !arg.skip_type)
                     .map(parse_arg_key)
+                    .filter(|r| r.is_ok())
                     .map(|r| r.unwrap())
                     .collect::<Vec<_>>();
 

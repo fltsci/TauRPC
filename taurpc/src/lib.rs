@@ -6,9 +6,8 @@
 
 pub extern crate serde;
 pub extern crate specta;
-pub extern crate specta_macros;
-use specta::datatype::Function;
 use specta::TypeCollection;
+use specta::datatype::Function;
 pub use specta_typescript::Typescript;
 
 use std::collections::{BTreeMap, HashMap};
@@ -23,7 +22,6 @@ pub use taurpc_macros::{ipc_type, procedures, resolvers};
 
 mod export;
 use export::export_types;
-
 /// A trait, which is automatically implemented by `#[taurpc::procedures]`, that is used for handling incoming requests
 /// and the type generation.
 pub trait TauRpcHandler<R: Runtime>: Sized {
@@ -87,8 +85,10 @@ pub fn create_ipc_handler<H, R: Runtime>(
 where
     H: TauRpcHandler<R> + Send + Sync + 'static + Clone,
 {
+    #[allow(unused_variables)]
     let args_map = BTreeMap::from([(H::PATH_PREFIX.to_string(), H::args_map())]);
     let mut type_map = TypeCollection::default();
+    #[allow(unused_variables)]
     let functions = BTreeMap::from([(
         H::PATH_PREFIX.to_string(),
         H::collect_fn_types(&mut type_map),
@@ -96,14 +96,19 @@ where
 
     // Only export in development mode
     if tauri::is_dev() {
-        export_types(
+        match export_types(
             H::EXPORT_PATH,
             args_map,
             specta_typescript::Typescript::default(),
             functions,
             type_map,
-        )
-        .unwrap();
+        ) {
+            Ok(_) => (),
+            Err(e) => println!(
+                "Error exporting types: {:?}\ntaurpc will continue with router creation.",
+                e
+            ),
+        };
     }
     move |invoke: Invoke<R>| {
         procedures.clone().handle_incoming_request(invoke);
@@ -291,14 +296,19 @@ impl<R: Runtime> Router<R> {
     pub fn into_handler(self) -> impl Fn(Invoke<R>) -> bool {
         // Only export in development mode
         if tauri::is_dev() {
-            export_types(
+            match export_types(
                 self.export_path,
                 self.args_map_json.clone(),
                 self.export_config.clone(),
                 self.fns_map.clone(),
                 self.types.clone(),
-            )
-            .unwrap();
+            ) {
+                Ok(_) => (),
+                Err(e) => println!(
+                    "Error exporting types: {:?}\ntaurpc will continue with router creation.",
+                    e
+                ),
+            };
         }
 
         move |invoke: Invoke<R>| self.on_command(invoke)
