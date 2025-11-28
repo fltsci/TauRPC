@@ -100,8 +100,9 @@ pub fn resolvers(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut types: Vec<ImplItemType> = Vec::new();
 
     for inner in &mut item.items {
-        if let ImplItem::Fn(method) = inner 
-            && method.sig.asyncness.is_some() {
+        if let ImplItem::Fn(method) = inner
+            && method.sig.asyncness.is_some()
+        {
             types.push(transform_method(method));
         }
     }
