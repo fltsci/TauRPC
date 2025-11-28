@@ -95,9 +95,9 @@ pub(super) fn export_types(
         .context("Cannot open bindings file")?;
 
     try_write(&mut file, &export_config.header);
-    try_write(&mut file, &framework_header);
-    try_write(&mut file, &BOILERPLATE_TS_IMPORT);
-    try_write(&mut file, &body);
+    try_write(&mut file, framework_header);
+    try_write(&mut file, BOILERPLATE_TS_IMPORT);
+    try_write(&mut file, body);
 
     let args_entries: String = args_map
         .iter()
@@ -108,7 +108,7 @@ pub(super) fn export_types(
     try_write(&mut file, &format!("const ARGS_MAP = {router_args}\n"));
     let functions_router = generate_functions_router(functions, type_map, &export_config);
     try_write(&mut file, &functions_router);
-    try_write(&mut file, &BOILERPLATE_TS_EXPORT);
+    try_write(&mut file, BOILERPLATE_TS_EXPORT);
 
     if export_path.ends_with("node_modules\\.taurpc\\index.ts") {
         let package_json_path = Path::new(&export_path)
@@ -137,7 +137,7 @@ fn generate_functions_router(
 ) -> String {
     let functions = functions
         .iter()
-        .filter_map(|(path, path_functions)| {
+        .map(|(path, path_functions)| {
             let mut function_names_and_funcs: Vec<_> =
                 path_functions.iter().map(|f| (f.name(), f)).collect();
             function_names_and_funcs.sort_by(|a, b| a.0.cmp(b.0));
@@ -154,7 +154,7 @@ fn generate_functions_router(
                 }
             };
 
-            Some(format!(r#""{path}": {{{functions}}}"#))
+            format!(r#""{path}": {{{functions}}}"#)
         })
         .collect::<Vec<String>>()
         .join(",\n");

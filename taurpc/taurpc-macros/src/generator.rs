@@ -279,9 +279,7 @@ impl ProceduresGenerator<'_> {
                 let args = args
                     .iter()
                     .filter(|arg| !arg.skip_type)
-                    .map(parse_arg_key)
-                    .filter(|r| r.is_ok())
-                    .map(|r| r.unwrap())
+                    .flat_map(parse_arg_key)
                     .collect::<Vec<_>>();
 
                 args_map.insert(ident.to_string(), args);
