@@ -1,5 +1,11 @@
 # taurpc
 
+## 1.8.2-canary.0
+
+### Patch Changes
+
+- [`7de749b`](https://github.com/MatsDK/TauRPC/commit/7de749b9ffa3d92afa088ae65758c237f7655d86) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Update workflows to use NPM OIDC authentication for publishing.
+
 ## 1.8.1
 
 ### Patch Changes
