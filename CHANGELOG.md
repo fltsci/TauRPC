@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- [`7de749b`](https://github.com/MatsDK/TauRPC/commit/7de749b9ffa3d92afa088ae65758c237f7655d86) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Update workflows to use NPM OIDC authentication for publishing.
+- [`89bcc9b`](https://github.com/MatsDK/TauRPC/commit/89bcc9b665686dfb5e08d7f3c356403e75c1c9ee) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Update workflows to use NPM OIDC authentication for publishing.
 
 ## 1.8.1
 
