@@ -1,5 +1,11 @@
 # taurpc
 
+## 1.8.2-canary.1
+
+### Patch Changes
+
+- [#5](https://github.com/fltsci/TauRPC/pull/5) [`6d76381`](https://github.com/fltsci/TauRPC/commit/6d76381b50a6430fc39eefdfedaec52961efcaaa) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Update npm publish settings
+
 ## 1.8.2-canary.0
 
 ### Patch Changes
