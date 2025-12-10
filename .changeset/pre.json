@@ -5,6 +5,7 @@
     "@fltsci/taurpc": "1.8.1"
   },
   "changesets": [
+    "calm-wombats-stand",
     "nice-years-dream"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@fltsci/taurpc",
-  "version": "1.8.2-canary.0",
+  "version": "1.8.2-canary.1",
   "description": "Type-safe IPC layer for Tauri commands and events; forked from MatsDK/TauRPC",
   "main": "dist/index.cjs",
   "repository": {
@@ -29,7 +29,10 @@
     "lint:js": "eslint ."
   },
   "keywords": [],
-  "contributors": ["MatsDK", "johncarmack1984"],
+  "contributors": [
+    "MatsDK",
+    "johncarmack1984"
+  ],
   "license": "ISC",
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
