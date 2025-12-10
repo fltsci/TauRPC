@@ -1,12 +1,12 @@
 [package]
 name = "taurpc"
-authors = ["MatsDK"]
+authors = ["MatsDK","johncarmack1984"]
 version = "0.5.2"
 edition = "2024"
 description = "A type-safe IPC layer for tauri commands"
 documentation = "https://docs.rs/taurpc"
-homepage = "https://github.com/MatsDK/TauRPC"
-repository = "https://github.com/MatsDK/TauRPC"
+homepage = "https://github.com/fltsci/TauRPC"
+repository = "https://github.com/fltsci/TauRPC"
 license = "MIT OR Apache-2.0"
 readme = "../README.md"
 categories = []

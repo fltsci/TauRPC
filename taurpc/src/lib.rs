@@ -2,7 +2,7 @@
 //! TauRPC should be used instead of [Tauri's IPC system](https://v2.tauri.app/develop/calling-rust),
 //! which does not provide TypeScript types for your commands or events.
 //!
-//! Go the the [GitHub](https://github.com/MatsDK/TauRPC/#readme) page to get started.
+//! Go the the [GitHub](https://github.com/fltsci/TauRPC/#readme) page to get started.
 
 pub extern crate serde;
 pub extern crate specta;

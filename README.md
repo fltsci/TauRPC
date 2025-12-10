@@ -22,7 +22,7 @@ specta = { version = "=2.0.0-rc.22", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 ```
 
-Then, declare and implement your IPC methods and resolvers. If you want to use your API for Tauri's events, you don't have to implement the resolvers, go to [Calling the frontend](https://github.com/MatsDK/TauRPC/#calling-the-frontend)
+Then, declare and implement your IPC methods and resolvers. If you want to use your API for Tauri's events, you don't have to implement the resolvers, go to [Calling the frontend](https://github.com/fltsci/TauRPC/#calling-the-frontend)
 
 ```rust
 // src-tauri/src/main.rs
@@ -73,7 +73,7 @@ await taurpc.hello_world()
 
 The types for taurpc are generated once you start your application, run `pnpm tauri dev`. If the types are not picked up by the LSP, you may have to restart typescript to reload the types.
 
-You can find a complete example (using Svelte) [here](https://github.com/MatsDK/TauRPC/tree/main/example).
+You can find a complete example (using Svelte) [here](https://github.com/fltsci/TauRPC/tree/main/example).
 
 # Using structs
 
@@ -153,7 +153,7 @@ async fn main() {
 You can return a `Result<T, E>` to return an error if the procedure fails. This is will reject the promise on the frontend and throw an error.
 If you're working with error types from Rust's std library, they will probably not implement `serde::Serialize` which is required for anything that is returned in the procedure.
 In simple scenarios you can use `map_err` to convert these errors to `String`s. For more complex scenarios, you can create your own error type that implements `serde::Serialize`.
-You can find an example using [thiserror](https://github.com/dtolnay/thiserror) [here](https://github.com/MatsDK/TauRPC/blob/main/example/src-tauri/src/main.rs).
+You can find an example using [thiserror](https://github.com/dtolnay/thiserror) [here](https://github.com/fltsci/TauRPC/blob/main/example/src-tauri/src/main.rs).
 You can also find more information about this in the [Tauri guides](https://v2.tauri.app/develop/calling-rust/#error-handling).
 
 # Extra options for procedures
@@ -256,7 +256,7 @@ Trigger [events](https://v2.tauri.app/develop/calling-rust/#event-system) on you
 The `#[taurpc::procedures]` macro also generates a struct that you can use to trigger the events, this means you can define the event types the same way you define the procedures.
 
 First start by declaring the API structure, by default the event trigger struct will be identified by `TauRpc{trait_ident}EventTrigger`. If you want to change this, you can add an attribute to do this, `#[taurpc::procedures(event_trigger = ApiEventTrigger)]`.
-For more details you can look at the [example](https://github.com/MatsDK/TauRPC/blob/main/example/src-tauri/src/main.rs).
+For more details you can look at the [example](https://github.com/fltsci/TauRPC/blob/main/example/src-tauri/src/main.rs).
 
 You should add the `#[taurpc(event)]` attribute to your events. If you do this, you will not have to implement the corresponding resolver.
 
