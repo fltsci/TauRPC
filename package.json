@@ -29,7 +29,7 @@
     "lint:js": "eslint ."
   },
   "keywords": [],
-  "contributors": ["MatsDK","johncarmack1984"],
+  "contributors": ["MatsDK", "johncarmack1984"],
   "license": "ISC",
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
