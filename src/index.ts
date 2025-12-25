@@ -90,7 +90,7 @@ const nestedProxy = (
   args_maps: ArgsMap,
   path: string[] = [],
 ) => {
-  return new window.Proxy({}, {
+  return new Proxy({}, {
     get(_target, p, _receiver): object {
       const method_name = p.toString()
       const nested_path = [...path, method_name]
@@ -98,7 +98,7 @@ const nestedProxy = (
       if (method_name === 'then') return {}
 
       if (args_map && method_name in args_map) {
-        return new window.Proxy(() => {
+        return new Proxy(() => {
           // Empty fn
         }, {
           get: (_target, prop, _receiver) => {
