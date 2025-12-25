@@ -1,5 +1,11 @@
 # taurpc
 
+## 1.8.2-canary.2
+
+### Patch Changes
+
+- [#7](https://github.com/fltsci/TauRPC/pull/7) [`00d9e24`](https://github.com/fltsci/TauRPC/commit/00d9e24333175f24d00ffd61a1a75fc715b6a685) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Use regular Proxy rather than window.Proxy
+
 ## 1.8.2-canary.1
 
 ### Patch Changes
