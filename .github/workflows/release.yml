@@ -71,5 +71,4 @@ jobs:
           git checkout changeset-release/main
           pnpm install --no-frozen-lockfile
           git add .
-          git commit -m "chore(release): 📦 sync lockfile"
-          git push origin changeset-release/main
+          git diff --cached --quiet || (git commit -m "chore(release): 📦 sync lockfile" && git push origin changeset-release/main)
