@@ -124,17 +124,16 @@ fn generate_functions_router(
                 path_functions.iter().map(|f| (f.name(), f)).collect();
             function_names_and_funcs.sort_by(|a, b| a.0.cmp(b.0));
 
-            let functions = match function_names_and_funcs
+            let functions = function_names_and_funcs
                 .iter()
-                .map(|(_, function)| generate_function(function, export_config, &type_map))
-                .collect::<Result<Vec<_>, _>>()
-            {
-                Ok(functions) => functions.join(", \n"),
-                Err(e) => {
-                    eprintln!("Error generating functions: {e:?}");
-                    "".to_string()
-                }
-            };
+                .filter_map(|(_, function)| {
+                    match generate_function(function, export_config, &type_map) {
+                        Ok(f) => Some(f),
+                        Err(_) => None,
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", \n");
 
             format!(r#""{path}": {{{functions}}}"#)
         })
