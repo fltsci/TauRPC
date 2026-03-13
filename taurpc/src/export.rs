@@ -2,7 +2,7 @@ use anyhow::{Context, Result, bail};
 use heck::ToLowerCamelCase;
 use itertools::Itertools;
 use specta::TypeCollection;
-use specta::datatype::{Function, FunctionResultVariant};
+use specta::datatype::{Function, FunctionReturnType};
 use specta_typescript as ts;
 use specta_typescript::Typescript;
 use std::collections::BTreeMap;
@@ -44,7 +44,7 @@ pub(super) fn export_types(
     args_map: BTreeMap<String, String>,
     export_config: ts::Typescript,
     functions: BTreeMap<String, Vec<Function>>,
-    mut type_map: TypeCollection,
+    type_map: TypeCollection,
 ) -> Result<()> {
     let path = export_path.as_ref();
     if path.extension() != Some(OsStr::new("ts")) {
@@ -60,8 +60,7 @@ pub(super) fn export_types(
         }
     }
 
-    // Export `types_map` containing all referenced types.
-    type_map.remove(<tauri::ipc::Channel<()> as specta::NamedType>::sid());
+    // Export all referenced types via specta.
     let types = match export_config
         .export(&type_map)
         .context("Failed to generate types with specta")
@@ -73,18 +72,6 @@ pub(super) fn export_types(
         }
     };
 
-    // Put headers always at the top of the file, followed by the module imports.
-    let framework_header = export_config.framework_header.as_ref();
-    let body = match types.split_once(framework_header) {
-        Some((_, body)) => body,
-        None => {
-            println!(
-                "Failed to split types with framework header\nbody will be empty string\ntaurpc will continue with router creation."
-            );
-            ""
-        }
-    };
-
     let mut file = OpenOptions::new()
         .create(true)
         .truncate(true)
@@ -92,10 +79,10 @@ pub(super) fn export_types(
         .open(path)
         .context("Cannot open bindings file")?;
 
-    try_write(&mut file, &export_config.header);
-    try_write(&mut file, framework_header);
+    // Write specta-generated types (includes header + framework prelude + type definitions)
+    try_write(&mut file, &types);
+    // Append our IPC boilerplate
     try_write(&mut file, BOILERPLATE_TS_IMPORT);
-    try_write(&mut file, body);
 
     let args_entries: String = args_map
         .iter()
@@ -122,13 +109,6 @@ pub(super) fn export_types(
             .context("failed to create 'package.json'")?;
     }
 
-    // Format the output file if the user specified a formatter on `export_config`.
-    if export_config.formatter.is_some() {
-        match export_config.format(path) {
-            Ok(_) => (),
-            Err(e) => println!("Error formatting bindings file: {}", e),
-        }
-    }
     Ok(())
 }
 
@@ -171,30 +151,24 @@ fn generate_function(
 ) -> Result<String> {
     let args = function
         .args()
+        .iter()
         .map(|(name, typ)| {
-            ts::datatype(
-                export_config,
-                &FunctionResultVariant::Value(typ.clone()),
-                type_map,
-            )
-            .map(|ty| format!("{}: {}", name.to_lower_camel_case(), ty))
+            ts::primitives::inline(export_config, type_map, typ)
+                .map(|ty| format!("{}: {}", name.to_lower_camel_case(), ty))
+                .map_err(|e| anyhow::anyhow!(e))
         })
         .collect::<Result<Vec<_>, _>>()
         .context("An error occured while generating command args")?
         .join(", ");
 
     let return_ty = match function.result() {
-        Some(FunctionResultVariant::Value(t)) => ts::datatype(
-            export_config,
-            &FunctionResultVariant::Value(t.clone()),
-            type_map,
-        )?,
+        Some(FunctionReturnType::Value(t)) => {
+            ts::primitives::inline(export_config, type_map, t).map_err(|e| anyhow::anyhow!(e))?
+        }
         // TODO: handle result types
-        Some(FunctionResultVariant::Result(t, _e)) => ts::datatype(
-            export_config,
-            &FunctionResultVariant::Value(t.clone()),
-            type_map,
-        )?,
+        Some(FunctionReturnType::Result(t, _e)) => {
+            ts::primitives::inline(export_config, type_map, t).map_err(|e| anyhow::anyhow!(e))?
+        }
         None => "void".to_string(),
     };
 

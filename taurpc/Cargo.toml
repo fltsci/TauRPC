@@ -26,9 +26,9 @@ heck = "0"
 itertools = "0"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
-specta = { version = "2.0.0-rc.22", features = ["export", "function"] }
-specta-serde = { version = "0", features = [] }
-specta-typescript = { version = "0", features = ["function"] }
+specta = { version = "2.0.0-rc.23", features = ["collect", "function"] }
+specta-serde = { version = "0.0.10", features = [] }
+specta-typescript = "0.0.10"
 tauri = { version = "2", features = ["specta"] }
 taurpc-macros = { path = "./taurpc-macros", version = "=0.7.1" }
 tokio = { version = "1", features = ["full"] }
