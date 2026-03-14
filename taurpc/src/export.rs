@@ -18,9 +18,15 @@ static PACKAGE_JSON: &str = r#"
 }
 "#;
 
-static BOILERPLATE_TS_HEADER: &str = r#"import { createTauRPCProxy as createProxy, type InferCommandOutput } from '@fltsci/taurpc'
+static BOILERPLATE_TS_HEADER: &str = r#"
 
-type TAURI_CHANNEL<T> = (response: T) => void"#;
+import { 
+  createTauRPCProxy as createProxy,
+  type InferCommandOutput 
+} from '@fltsci/taurpc'
+
+type TAURI_CHANNEL<T> = (response: T) => void
+"#;
 
 static BOILERPLATE_TS_EXPORT: &str = r#"
 
