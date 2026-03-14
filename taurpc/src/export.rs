@@ -18,12 +18,9 @@ static PACKAGE_JSON: &str = r#"
 }
 "#;
 
-static BOILERPLATE_TS_IMPORT: &str = r#"
+static BOILERPLATE_TS_HEADER: &str = r#"import { createTauRPCProxy as createProxy, type InferCommandOutput } from '@fltsci/taurpc'
 
-import { createTauRPCProxy as createProxy, type InferCommandOutput } from '@fltsci/taurpc'
-
-type TAURI_CHANNEL<T> = (response: T) => void
-"#;
+type TAURI_CHANNEL<T> = (response: T) => void"#;
 
 static BOILERPLATE_TS_EXPORT: &str = r#"
 
@@ -60,7 +57,10 @@ pub(super) fn export_types(
         }
     }
 
-    // Export all referenced types via specta.
+    // Set our import/TAURI_CHANNEL as the file header so specta places it
+    // before the framework prelude and type definitions.
+    let export_config = export_config.header(BOILERPLATE_TS_HEADER);
+
     let types = match export_config
         .export(&type_map)
         .context("Failed to generate types with specta")
@@ -79,10 +79,7 @@ pub(super) fn export_types(
         .open(path)
         .context("Cannot open bindings file")?;
 
-    // Write specta-generated types (includes header + framework prelude + type definitions)
     try_write(&mut file, &types);
-    // Append our IPC boilerplate
-    try_write(&mut file, BOILERPLATE_TS_IMPORT);
 
     let args_entries: String = args_map
         .iter()
