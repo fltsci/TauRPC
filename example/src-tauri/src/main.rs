@@ -255,9 +255,22 @@ async fn main() {
     //     })
     //     .run(tauri::generate_context!())
     //     .expect("error while running tauri application");
+    let handler = router.into_handler();
+
+    // Format the generated bindings after export
+    #[cfg(debug_assertions)]
+    {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let repo_root = manifest_dir.join("../..");
+        let _ = std::process::Command::new("pnpm")
+            .arg("format")
+            .current_dir(repo_root)
+            .status();
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(router.into_handler())
+        .invoke_handler(handler)
         .setup(|app| {
             #[cfg(debug_assertions)]
             app.get_webview_window("main").unwrap().open_devtools();
