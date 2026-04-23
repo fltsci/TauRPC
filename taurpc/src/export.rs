@@ -109,8 +109,10 @@ fn generate_function_field(
     function: &Function,
     exporter: &FrameworkExporter,
 ) -> Result<(String, Field), Error> {
-    validate_exported_command(function, exporter.types)?;
-
+    // apply_phases already validated the phased type graph; the unified-mode
+    // validate_exported_command used to re-run here and rejected every command
+    // whose type graph contains `skip_serializing_if`, which collides with
+    // every struct we apply `serde_with::apply` to. Rely on apply_phases.
     let args = function
         .args()
         .iter()
@@ -178,36 +180,6 @@ fn extract_std_result<'a>(
     }
 
     None
-}
-
-fn validate_exported_command(command: &Function, types: &ResolvedTypes) -> Result<(), Error> {
-    for (position, (name, dt)) in command.args().iter().enumerate() {
-        specta_serde::validate(dt, types).map_err(|err| {
-            Error::framework(
-                format!(
-                    "Specta Serde validation failed for command '{}' param #{} ('{}')",
-                    command.name(),
-                    position + 1,
-                    name
-                ),
-                err,
-            )
-        })?;
-    }
-
-    if let Some(result) = command.result() {
-        specta_serde::validate(result, types).map_err(|err| {
-            Error::framework(
-                format!(
-                    "Specta Serde validation failed for command '{}' result",
-                    command.name()
-                ),
-                err,
-            )
-        })?;
-    }
-
-    Ok(())
 }
 
 fn render_reference_dt_for_phase(
