@@ -8,7 +8,7 @@
   "exec": {
     "associations": "**/*.{rs}",
     "commands": [{
-      "command": "rustfmt --edition 2025",
+      "command": "rustfmt --edition 2024",
       "exts": ["rs"]
     }]
   },
