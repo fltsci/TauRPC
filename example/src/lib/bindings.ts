@@ -21,8 +21,7 @@ export type User = {
 	last_name: string,
 };
 
-import { createTauRPCProxy as createProxy, type InferCommandOutput } from '@fltsci/taurpc'
-const ARGS_MAP = {
+export const ARGS_MAP = {
   "": "{\"ev\":[\"updated_value\"],\"get_app_handle\":[],\"get_webview_window\":[],\"get_window\":[],\"method_with_alias\":[],\"multiple_args\":[\"arg\",\"arg2\"],\"phase_specific_rename\":[\"input\"],\"test_bigint\":[\"num\"],\"test_io\":[\"_user\"],\"test_option\":[],\"test_result\":[\"user\"],\"update_state\":[\"new_value\"],\"vec_test\":[\"arg\"],\"with_channel\":[\"on_event\"],\"with_sleep\":[]}",
   "api.ui": "{\"test_ev\":[],\"trigger\":[]}",
   "events": "{\"multiple_args\":[\"arg1\",\"arg2\"],\"state_changed\":[\"new_state\"],\"test_ev\":[],\"vec_test\":[\"args\"]}"
@@ -57,7 +56,4 @@ export type Router = {
 		vec_test: (args: string[]) => Promise<void>,
 	},
 };
-
-export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP)
-export type { InferCommandOutput }
 

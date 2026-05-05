@@ -15,23 +15,25 @@ const FRAMEWORK_HEADER: &str =
 static PACKAGE_JSON: &str = r#"
 {
     "name": ".taurpc",
-    "types": "index.ts"
+    "types": "index.ts",
+    "exports": {
+        ".": "./index.ts",
+        "./proxy": "./proxy.ts"
+    }
 }
 "#;
 
-static BOILERPLATE_TS_IMPORT: &str = r#"
-import { createTauRPCProxy as createProxy, type InferCommandOutput } from '@fltsci/taurpc'
-"#;
-
-static BOILERPLATE_TS_EXPORT: &str = r#"
-export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP)
-export type { InferCommandOutput }
-"#;
-
-/// Export the generated TS types with the code necessary for generating the client proxy.
+/// Export the generated TS types and the runtime client proxy.
 ///
-/// By default, if the `export_to` attribute was not specified on the procedures macro, there will
-/// be nothing exported. Otherwise the code will just be export to the .ts file specified by the user.
+/// Output is split across two files:
+///   - `bindings.ts`: types, `ARGS_MAP`, and `Router`. No npm imports, so
+///     Vite's optimizeDeps scanner does not pre-bundle `@fltsci/taurpc`
+///     when consumers only `import type` from this file.
+///   - `proxy.ts`: the runtime `createTauRPCProxy` factory plus a
+///     `InferCommandOutput` re-export.
+///
+/// By default, if the `export_to` attribute was not specified on the
+/// procedures macro, nothing is exported.
 pub(super) fn export_types(
     export_path: &'static str,
     args_map: BTreeMap<String, String>,
@@ -49,9 +51,8 @@ pub(super) fn export_types(
             let mut out = String::new();
 
             out.push_str(&exporter.render_types()?);
-            out.push_str(BOILERPLATE_TS_IMPORT);
 
-            out.push_str("const ARGS_MAP = ");
+            out.push_str("\nexport const ARGS_MAP = ");
             out.push_str(
                 &serde_json::to_string_pretty(&args_map)
                     .map_err(|err| Error::framework("error stringify argument map", err))?,
@@ -62,14 +63,23 @@ pub(super) fn export_types(
                 &generate_functions_router(&functions, &exporter)
                     .map_err(|err| Error::framework("failed to generate router type", err))?,
             );
-            out.push_str(BOILERPLATE_TS_EXPORT);
 
             Ok(out.into())
         })
         .export_to(export_path, &types)?;
 
-    if export_path.ends_with("node_modules\\.taurpc\\index.ts") {
-        let package_json_path = Path::new(export_path)
+    let bindings_path = Path::new(export_path);
+    let proxy_path = bindings_path.with_file_name("proxy.ts");
+    let bindings_stem = bindings_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| Error::framework("", "bindings path has no valid file stem"))?;
+
+    write_proxy_file(&proxy_path, bindings_stem)?;
+
+    let normalized = export_path.replace('\\', "/");
+    if normalized.ends_with("node_modules/.taurpc/index.ts") {
+        let package_json_path = bindings_path
             .parent()
             .ok_or(Error::framework("", "Failed to create 'package.json' path"))?
             .join("package.json");
@@ -78,6 +88,23 @@ pub(super) fn export_types(
             .map_err(|err| Error::framework("Failed to create 'package.json' file", err))?
     }
 
+    Ok(())
+}
+
+/// Write `proxy.ts` -- imports `ARGS_MAP` and `Router` from the sibling
+/// bindings file and exports `createTauRPCProxy`. Kept out of bindings.ts
+/// so the bindings stay free of npm imports (Vite's optimizeDeps scanner
+/// won't pre-bundle `@fltsci/taurpc` when consumers only `import type`).
+fn write_proxy_file(proxy_path: &Path, bindings_stem: &str) -> Result<(), Error> {
+    let content = format!(
+        "{FRAMEWORK_HEADER}\n\
+         import {{ createTauRPCProxy as createProxy, type InferCommandOutput }} from '@fltsci/taurpc'\n\
+         import {{ ARGS_MAP, type Router }} from './{bindings_stem}'\n\n\
+         export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP)\n\
+         export type {{ InferCommandOutput }}\n"
+    );
+    std::fs::write(proxy_path, content)
+        .map_err(|err| Error::framework("Failed to write proxy.ts", err))?;
     Ok(())
 }
 
