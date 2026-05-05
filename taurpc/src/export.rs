@@ -45,7 +45,10 @@ pub(super) fn export_types(
     let types = specta_serde::apply_phases(types)
         .map_err(|err| Error::framework("Specta Serde validation failed", err))?;
 
-    Exporter::from(ts)
+    let exporter: Exporter = ts.into();
+    let user_header = exporter.header.clone();
+
+    exporter
         .framework_prelude(FRAMEWORK_HEADER)
         .framework_runtime(move |mut exporter| {
             let mut out = String::new();
@@ -75,7 +78,7 @@ pub(super) fn export_types(
         .and_then(|s| s.to_str())
         .ok_or_else(|| Error::framework("", "bindings path has no valid file stem"))?;
 
-    write_proxy_file(&proxy_path, bindings_stem)?;
+    write_proxy_file(&proxy_path, bindings_stem, &user_header)?;
 
     let normalized = export_path.replace('\\', "/");
     if normalized.ends_with("node_modules/.taurpc/index.ts") {
@@ -95,9 +98,20 @@ pub(super) fn export_types(
 /// bindings file and exports `createTauRPCProxy`. Kept out of bindings.ts
 /// so the bindings stay free of npm imports (Vite's optimizeDeps scanner
 /// won't pre-bundle `@fltsci/taurpc` when consumers only `import type`).
-fn write_proxy_file(proxy_path: &Path, bindings_stem: &str) -> Result<(), Error> {
+fn write_proxy_file(
+    proxy_path: &Path,
+    bindings_stem: &str,
+    user_header: &str,
+) -> Result<(), Error> {
+    let user_prefix = if user_header.is_empty() {
+        String::new()
+    } else if user_header.ends_with('\n') {
+        user_header.to_string()
+    } else {
+        format!("{user_header}\n")
+    };
     let content = format!(
-        "{FRAMEWORK_HEADER}\n\
+        "{user_prefix}{FRAMEWORK_HEADER}\n\
          import {{ createTauRPCProxy as createProxy, type InferCommandOutput }} from '@fltsci/taurpc'\n\
          import {{ ARGS_MAP, type Router }} from './{bindings_stem}'\n\n\
          export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP)\n\

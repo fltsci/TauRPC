@@ -3,7 +3,13 @@
 
 export type Error = string;
 
-export type PhaseSpecificRename = {
+export type PhaseSpecificRename = PhaseSpecificRename_Serialize | PhaseSpecificRename_Deserialize;
+
+export type PhaseSpecificRename_Deserialize = {
+	deserialized_value: string,
+};
+
+export type PhaseSpecificRename_Serialize = {
 	serialized_value: string,
 };
 
@@ -35,7 +41,7 @@ export type Router = {
 		get_window: () => Promise<void>,
 		method_with_alias: () => Promise<void>,
 		multiple_args: (arg: string[], arg2: string) => Promise<void>,
-		phase_specific_rename: (input: PhaseSpecificRename) => Promise<PhaseSpecificRename>,
+		phase_specific_rename: (input: PhaseSpecificRename_Deserialize) => Promise<PhaseSpecificRename_Serialize>,
 		test_bigint: (num: number) => Promise<number>,
 		test_io: (user: User) => Promise<User>,
 		test_option: () => Promise<null>,
