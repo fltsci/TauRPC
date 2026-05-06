@@ -23,7 +23,9 @@ taurpc = { path = "../../taurpc" }
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 specta-typescript = "0.0.11"
 
+# TODO: Remove patches
 [patch.crates-io]
-specta = { path = "/Users/oscar/files/specta/specta" }
-specta-serde = { path = "/Users/oscar/files/specta/specta-serde" }
-specta-typescript = { path = "/Users/oscar/files/specta/specta-typescript" }
+specta = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
+specta-typescript = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
+specta-serde = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
+specta-util = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
