@@ -4,8 +4,8 @@ import { createTauRPCProxy as createProxy, type InferCommandOutput, type TauRpcR
 import { ARGS_MAP, RESULT_MAP, TRANSFORM_MAP, type Router } from './bindings'
 
 export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP, {
-resultMap: RESULT_MAP,
-transformMap: TRANSFORM_MAP,
-errorHandling: 'result',
+  resultMap: RESULT_MAP,
+  transformMap: TRANSFORM_MAP,
+  errorHandling: 'result',
 })
 export type { InferCommandOutput, TauRpcResult }

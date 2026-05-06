@@ -2955,6 +2955,7 @@ dependencies = [
 [[package]]
 name = "specta"
 version = "2.0.0-rc.24"
+source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
 dependencies = [
  "paste",
  "rustc_version",
@@ -2964,6 +2965,7 @@ dependencies = [
 [[package]]
 name = "specta-macros"
 version = "2.0.0-rc.24"
+source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -2974,6 +2976,7 @@ dependencies = [
 [[package]]
 name = "specta-serde"
 version = "0.0.11"
+source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
 dependencies = [
  "specta",
  "specta-macros",
@@ -2982,6 +2985,7 @@ dependencies = [
 [[package]]
 name = "specta-typescript"
 version = "0.0.11"
+source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
 dependencies = [
  "specta",
 ]
@@ -4871,3 +4875,8 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[patch.unused]]
+name = "specta-util"
+version = "0.0.11"
+source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"

@@ -13,11 +13,6 @@ export type PhaseSpecificRename_Serialize = {
 	serialized_value: string,
 };
 
-export type Result<T, E> = {
-	ok: T,
-	err: E,
-};
-
 export type Update = {
 	progress: number,
 };
