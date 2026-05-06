@@ -1,17 +1,19 @@
 import { createTauRPCProxy } from './proxy'
-import { Channel } from '@tauri-apps/api/core'
 
 const taurpc = createTauRPCProxy()
 
 const date = new Date()
 const bytes = new Uint8Array([1, 2, 3, 4])
 const url = new URL('https://specta.dev/docs?example=rich-types')
-const channel = new Channel<{ date: Date; bytes: Uint8Array; url: URL }>()
+const input = { date, bytes, url }
 
-channel.onmessage = (message) => {
-  console.log('semanticTypes channel', message)
+const assertSemanticTypes = (
+  label: string,
+  message: { date: Date; bytes: Uint8Array; url: URL },
+) => {
+  console.log(label, message)
   console.log(
-    'SEMANTIC CHANNEL ASSERTIONS',
+    `${label} ASSERTIONS`,
     message.date instanceof Date && message.date.getTime() === date.getTime(),
     message.bytes instanceof Uint8Array &&
       message.bytes.length === bytes.length &&
@@ -20,25 +22,16 @@ channel.onmessage = (message) => {
   )
 }
 
-// events.semanticTypesEvent.listen((event) => {
-//   console.log('semanticTypesEvent', event.payload)
-//   console.log(
-//     'SEMANTIC EVENT ASSERTIONS',
-//     event.payload.date instanceof Date,
-//     event.payload.bytes instanceof Uint8Array,
-//     event.payload.url instanceof URL,
-//   )
-// })
+const runSemanticTypesExample = async () => {
+  await taurpc.semantic_types_event.on((message) => {
+    assertSemanticTypes('semanticTypes event', message)
+  })
 
-taurpc.semantic_types({ date, bytes, url }, channel).then((result) => {
-  console.log('semanticTypes', result)
-  console.log(
-    'SEMANTIC TYPE ASSERTIONS',
-    result.date.getTime() === date.getTime(),
-    result.bytes.length === bytes.length &&
-      result.bytes.every((v, i) => v === bytes[i]),
-    result.url.href === url.href,
-  )
+  const result = await taurpc.semantic_types(input, (message) => {
+    assertSemanticTypes('semanticTypes channel', message)
+  })
 
-  // events.semanticTypesEvent.emit(result)
-})
+  assertSemanticTypes('semanticTypes result', result)
+}
+
+runSemanticTypesExample()

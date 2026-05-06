@@ -220,7 +220,8 @@ const handleProxyCall = async (
     const argName = procedureArgs[idx]
     if (!argName) throw new Error('Received invalid arguments')
 
-    const arg = transform?.args?.[idx]?.(args[idx]) ?? args[idx]
+    const rawArg = args[idx]
+    const arg = transform?.args?.[idx]?.(rawArg) ?? rawArg
     if (typeof arg == 'function') {
       const channel = new Channel()
       channel.onmessage = arg as typeof channel.onmessage

@@ -89,6 +89,9 @@ trait Api {
     #[taurpc(event)]
     async fn ev(updated_value: String);
 
+    #[taurpc(event)]
+    async fn semantic_types_event(input: SemanticTypes);
+
     async fn vec_test(arg: Vec<String>);
 
     async fn multiple_args(arg: Vec<String>, arg2: String);
@@ -99,8 +102,11 @@ trait Api {
 
     async fn phase_specific_rename(input: PhaseSpecificRename) -> PhaseSpecificRename;
 
-    async fn semantic_types(input: SemanticTypes, channel: Channel<SemanticTypes>)
-    -> SemanticTypes;
+    async fn semantic_types(
+        app_handle: AppHandle<impl Runtime>,
+        input: SemanticTypes,
+        channel: Channel<SemanticTypes>,
+    ) -> SemanticTypes;
 }
 
 #[derive(Clone)]
@@ -183,11 +189,15 @@ impl Api for ApiImpl {
 
     async fn semantic_types(
         self,
+        app_handle: AppHandle<impl Runtime>,
         input: SemanticTypes,
         channel: Channel<SemanticTypes>,
     ) -> SemanticTypes {
         println!("{input:?}");
         channel.send(input.clone()).unwrap();
+        ApiEventTrigger::new(app_handle)
+            .semantic_types_event(input.clone())
+            .unwrap();
         input
     }
 }

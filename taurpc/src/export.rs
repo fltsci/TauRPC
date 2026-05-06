@@ -286,10 +286,7 @@ fn generate_function_field(
 }
 
 fn render_reference_dt(dt: &DataType, exporter: &FrameworkExporter) -> Result<String, Error> {
-    if let DataType::Reference(Reference::Named(r)) = dt
-        && let Some(ndt) = exporter.types.get(r)
-        && ndt.name == "TAURI_CHANNEL"
-        && ndt.module_path.starts_with("tauri::")
+    if let Some(r) = tauri_channel_reference(dt, exporter.types)
     {
         let generic = if let Some((_, dt)) = named_reference_generics(r).first() {
             match &dt {
@@ -306,6 +303,18 @@ fn render_reference_dt(dt: &DataType, exporter: &FrameworkExporter) -> Result<St
             DataType::Reference(r) => exporter.reference(r),
             dt => exporter.inline(dt),
         }
+    }
+}
+
+fn tauri_channel_reference<'a>(dt: &'a DataType, types: &'a Types) -> Option<&'a NamedReference> {
+    if let DataType::Reference(Reference::Named(r)) = dt
+        && let Some(ndt) = types.get(r)
+        && ndt.name == "TAURI_CHANNEL"
+        && ndt.module_path.starts_with("tauri::")
+    {
+        Some(r)
+    } else {
+        None
     }
 }
 
@@ -390,21 +399,46 @@ fn generate_transform_map(
             let mut args = Vec::new();
             let mut event_args = Vec::new();
             for (_, arg_dt) in function.args() {
-                let dt = select_dt_for_config(
-                    arg_dt,
-                    Phase::Deserialize,
-                    exporter.types,
-                    export_runtime,
-                );
-                let transform = apply_semantic_type_for_phase(
-                    &dt,
-                    Phase::Serialize,
-                    "v",
-                    runtime_types,
-                    semantic_types,
-                )
-                .map(|(_, runtime)| runtime)
-                .filter(|runtime| runtime != "v");
+                let transform = if let Some(channel) = tauri_channel_reference(arg_dt, exporter.types)
+                    && let Some((_, response_dt)) = named_reference_generics(channel).first()
+                {
+                    let response_dt = select_dt_for_config(
+                        response_dt,
+                        Phase::Serialize,
+                        exporter.types,
+                        export_runtime,
+                    );
+                    apply_semantic_type_for_phase(
+                        &response_dt,
+                        Phase::Deserialize,
+                        "response",
+                        runtime_types,
+                        semantic_types,
+                    )
+                    .map(|(_, runtime)| runtime)
+                    .filter(|runtime| runtime != "response")
+                    .map(|runtime| {
+                        format!(
+                            "{{ const transform = (response) => {runtime}; if (typeof v === \"function\") return (response) => v(transform(response)); const onmessage = v.onmessage; v.onmessage = (response) => onmessage(transform(response)); return v }}"
+                        )
+                    })
+                } else {
+                    let dt = select_dt_for_config(
+                        arg_dt,
+                        Phase::Deserialize,
+                        exporter.types,
+                        export_runtime,
+                    );
+                    apply_semantic_type_for_phase(
+                        &dt,
+                        Phase::Serialize,
+                        "v",
+                        runtime_types,
+                        semantic_types,
+                    )
+                    .map(|(_, runtime)| runtime)
+                    .filter(|runtime| runtime != "v")
+                };
 
                 args.push(match transform {
                     Some(transform) => format!("(v) => {transform}"),
