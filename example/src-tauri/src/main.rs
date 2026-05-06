@@ -53,6 +53,14 @@ struct PhaseSpecificRename {
     value: String,
 }
 
+#[derive(Debug)]
+#[taurpc::ipc_type]
+pub struct SemanticTypes {
+    date: chrono::DateTime<chrono::Utc>,
+    bytes: bytes::Bytes,
+    url: url::Url,
+}
+
 // #[taurpc::procedures(event_trigger = ApiEventTrigger)]
 #[taurpc::procedures(event_trigger = ApiEventTrigger, export_to = "../src/lib/bindings.ts")]
 trait Api {
@@ -90,6 +98,9 @@ trait Api {
     async fn with_channel(on_event: Channel<Update>);
 
     async fn phase_specific_rename(input: PhaseSpecificRename) -> PhaseSpecificRename;
+
+    async fn semantic_types(input: SemanticTypes, channel: Channel<SemanticTypes>)
+    -> SemanticTypes;
 }
 
 #[derive(Clone)]
@@ -167,6 +178,16 @@ impl Api for ApiImpl {
     }
 
     async fn phase_specific_rename(self, input: PhaseSpecificRename) -> PhaseSpecificRename {
+        input
+    }
+
+    async fn semantic_types(
+        self,
+        input: SemanticTypes,
+        channel: Channel<SemanticTypes>,
+    ) -> SemanticTypes {
+        println!("{input:?}");
+        channel.send(input.clone()).unwrap();
         input
     }
 }

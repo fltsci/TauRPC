@@ -13,6 +13,12 @@ export type PhaseSpecificRename_Serialize = {
 	serialized_value: string,
 };
 
+export type SemanticTypes = {
+	date: string,
+	bytes: number[],
+	url: string,
+};
+
 export type Update = {
 	progress: number,
 };
@@ -30,7 +36,7 @@ export type User = {
 export type TauRpcResult<T, E> = { status: 'ok'; data: T } | { status: 'error'; error: E };
 
 export const ARGS_MAP = {
-  "": "{\"ev\":[\"updated_value\"],\"get_app_handle\":[],\"get_webview_window\":[],\"get_window\":[],\"method_with_alias\":[],\"multiple_args\":[\"arg\",\"arg2\"],\"phase_specific_rename\":[\"input\"],\"test_bigint\":[\"num\"],\"test_io\":[\"_user\"],\"test_option\":[],\"test_result\":[\"user\"],\"update_state\":[\"new_value\"],\"vec_test\":[\"arg\"],\"with_channel\":[\"on_event\"],\"with_sleep\":[]}",
+  "": "{\"ev\":[\"updated_value\"],\"get_app_handle\":[],\"get_webview_window\":[],\"get_window\":[],\"method_with_alias\":[],\"multiple_args\":[\"arg\",\"arg2\"],\"phase_specific_rename\":[\"input\"],\"semantic_types\":[\"input\",\"channel\"],\"test_bigint\":[\"num\"],\"test_io\":[\"_user\"],\"test_option\":[],\"test_result\":[\"user\"],\"update_state\":[\"new_value\"],\"vec_test\":[\"arg\"],\"with_channel\":[\"on_event\"],\"with_sleep\":[]}",
   "api.ui": "{\"test_ev\":[],\"trigger\":[]}",
   "events": "{\"multiple_args\":[\"arg1\",\"arg2\"],\"state_changed\":[\"new_state\"],\"test_ev\":[],\"vec_test\":[\"args\"]}"
 };
@@ -44,6 +50,7 @@ export const RESULT_MAP = {
     "method_with_alias": false,
     "multiple_args": false,
     "phase_specific_rename": false,
+    "semantic_types": false,
     "test_bigint": false,
     "test_io": false,
     "test_option": false,
@@ -76,6 +83,7 @@ export type Router = {
 		method_with_alias: () => Promise<void>,
 		multiple_args: (arg: string[], arg2: string) => Promise<void>,
 		phase_specific_rename: (input: PhaseSpecificRename_Deserialize) => Promise<PhaseSpecificRename_Serialize>,
+		semantic_types: (input: SemanticTypes, channel: (response: SemanticTypes) => void) => Promise<SemanticTypes>,
 		test_bigint: (num: number) => Promise<number>,
 		test_io: (user: User) => Promise<User>,
 		test_option: () => Promise<null>,
