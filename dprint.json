@@ -3,7 +3,10 @@
   "lineWidth": 80,
   "typescript": {
     "quoteStyle": "preferSingle",
-    "semiColons": "asi"
+    "semiColons": "asi",
+    "binaryExpression.operatorPosition": "maintain",
+    "conditionalExpression.operatorPosition": "maintain",
+    "conditionalType.operatorPosition": "maintain"
   },
   "exec": {
     "associations": "**/*.{rs}",
@@ -25,9 +28,9 @@
     "**/gen"
   ],
   "plugins": [
-    "https://plugins.dprint.dev/typescript-0.85.1.wasm",
-    "https://plugins.dprint.dev/json-0.17.4.wasm",
-    "https://plugins.dprint.dev/markdown-0.15.3.wasm",
-    "https://plugins.dprint.dev/exec-0.4.3.json@42343548b8022c99b1d750be6b894fe6b6c7ee25f72ae9f9082226dd2e515072"
+    "https://plugins.dprint.dev/typescript-0.96.0.wasm",
+    "https://plugins.dprint.dev/json-0.21.3.wasm",
+    "https://plugins.dprint.dev/markdown-0.21.1.wasm",
+    "https://plugins.dprint.dev/exec-0.6.2.json@df98f54ffd3092b8a841aedd6d098a2651f16d0a796a40535774f1a8b4b9d463"
   ]
 }
