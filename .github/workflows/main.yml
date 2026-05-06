@@ -37,6 +37,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.95.0"
+          components: rustfmt, clippy
+
       - name: Install deps (with cache)
         run: pnpm install
 
