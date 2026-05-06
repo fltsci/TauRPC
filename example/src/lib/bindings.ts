@@ -14,9 +14,9 @@ export type PhaseSpecificRename_Serialize = {
 };
 
 export type SemanticTypes = {
-	date: string,
-	bytes: number[],
-	url: string,
+	date: Date,
+	bytes: Uint8Array,
+	url: URL,
 };
 
 export type Update = {
@@ -72,7 +72,7 @@ export const RESULT_MAP = {
   }
 };
 
-export const TRANSFORM_MAP = {};
+export const TRANSFORM_MAP = { "": { "semantic_types": { args: [(v) => ({...v,bytes:[...v.bytes]}), null], eventArgs: [(v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}), null], result: (v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}) } } };
 
 export type Router = {
 	"": {

@@ -264,7 +264,13 @@ async fn main() {
 
     let router = Router::new()
         .export_config(specta_typescript::Typescript::default().header("// My header"))
+        // This enables typesafe error handlinga
         .error_handling(ErrorHandlingMode::Result)
+        // This enables `Date`, `Uint8Array`, and `URL` for supported types.
+        .semantic_types(specta_typescript::semantic::Configuration::default())
+        // This can be used if you don't want per-phase (Serialize/Deserialize) types.
+        // .disable_serde_phases()
+        // This isn't recommended as it allows large numbers to be truncated at runtime when being sent to the webview.
         .dangerously_cast_bigints_to_number()
         .merge(
             ApiImpl {

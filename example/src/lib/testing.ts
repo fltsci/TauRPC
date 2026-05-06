@@ -1,8 +1,7 @@
-import { createTauRPCProxy } from '@fltsci/taurpc'
+import { createTauRPCProxy } from './proxy'
 import { Channel } from '@tauri-apps/api/core'
-import type { Router } from './bindings'
 
-const taurpc = createTauRPCProxy<Router>()
+const taurpc = createTauRPCProxy()
 
 const date = new Date()
 const bytes = new Uint8Array([1, 2, 3, 4])
@@ -31,7 +30,7 @@ channel.onmessage = (message) => {
 //   )
 // })
 
-taurpc.semanticTypes({ date, bytes, url }, channel).then((result) => {
+taurpc.semantic_types({ date, bytes, url }, channel).then((result) => {
   console.log('semanticTypes', result)
   console.log(
     'SEMANTIC TYPE ASSERTIONS',
@@ -41,5 +40,5 @@ taurpc.semanticTypes({ date, bytes, url }, channel).then((result) => {
     result.url.href === url.href,
   )
 
-  events.semanticTypesEvent.emit(result)
+  // events.semanticTypesEvent.emit(result)
 })
