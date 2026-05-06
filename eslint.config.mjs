@@ -36,4 +36,18 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // The runtime proxy dispatcher receives serialized values, applies user-supplied
+    // transforms, and forwards them. Static types cannot describe that flow without
+    // defeating the purpose; the typed contract lives in generated Specta bindings,
+    // not here.
+    files: ['src/index.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+    },
+  },
 ])
