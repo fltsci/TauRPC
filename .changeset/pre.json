@@ -7,9 +7,13 @@
   "changesets": [
     "bigint-rewrite-f64-not-opaque",
     "calm-wombats-stand",
+    "dprint-2025",
+    "eslint-relax-dispatcher",
     "nice-years-dream",
     "release-auto-format",
+    "release-rust-setup",
     "restore-preserve-order",
+    "rust-toolchain-pin",
     "split-bindings-proxy",
     "witty-guests-like"
   ]
