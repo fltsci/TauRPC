@@ -13,17 +13,22 @@ export type PhaseSpecificRename_Serialize = {
 	serialized_value: string,
 };
 
+export type Result<T, E> = {
+	ok: T,
+	err: E,
+};
+
 export type Update = {
 	progress: number,
 };
 
-//Doc comments are also generated
+/** Doc comments are also generated */
 export type User = {
-	// The user's id
+	/** Doc comments are also generated */
 	uid: number,
-	// The user's first name
+	/** Doc comments are also generated */
 	first_name: string,
-	// The user's last name
+	/** Doc comments are also generated */
 	last_name: string,
 };
 
@@ -65,6 +70,8 @@ export const RESULT_MAP = {
   }
 };
 
+export const TRANSFORM_MAP = {};
+
 export type Router = {
 	"": {
 		ev: (updatedValue: string) => Promise<void>,
@@ -77,7 +84,7 @@ export type Router = {
 		test_bigint: (num: number) => Promise<number>,
 		test_io: (user: User) => Promise<User>,
 		test_option: () => Promise<null>,
-		test_result: (user: User) => Promise<TauRpcResult<User, string>>,
+		test_result: (user: User) => Promise<TauRpcResult<User, Error>>,
 		update_state: (newValue: string) => Promise<void>,
 		vec_test: (arg: string[]) => Promise<void>,
 		with_channel: (onEvent: (response: Update) => void) => Promise<void>,
@@ -94,3 +101,4 @@ export type Router = {
 		vec_test: (args: string[]) => Promise<void>,
 	},
 };
+

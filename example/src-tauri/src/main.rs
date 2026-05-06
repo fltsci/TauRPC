@@ -244,6 +244,7 @@ async fn main() {
     let router = Router::new()
         .export_config(specta_typescript::Typescript::default().header("// My header"))
         .error_handling(ErrorHandlingMode::Result)
+        .dangerously_cast_bigints_to_number()
         .merge(
             ApiImpl {
                 state: Arc::new(Mutex::new("state".to_string())),

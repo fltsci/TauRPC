@@ -76,6 +76,13 @@ type Payload = {
 }
 type ListenFn = (args: unknown) => void
 type ArgsMap = Record<string, Record<string, string[]>>
+type TransformFn = (value: unknown) => unknown
+type MethodTransform = {
+  args?: Array<TransformFn | null>
+  eventArgs?: Array<TransformFn | null>
+  result?: TransformFn | null
+}
+export type TransformMap = Record<string, Record<string, MethodTransform>>
 export type ResultMap = Record<string, Record<string, boolean>>
 export type ErrorHandlingMode = 'throw' | 'result'
 
@@ -83,11 +90,13 @@ export type TauRpcResult<T, E> =
   | { status: 'ok'; data: T }
   | { status: 'error'; error: E }
 
-export type TypedErrorFn =
-  <T, E>(result: Promise<T>) => Promise<T | TauRpcResult<T, E>>
+export type TypedErrorFn = <T, E>(
+  result: Promise<T>,
+) => Promise<T | TauRpcResult<T, E>>
 
 type CreateTauRPCProxyOptions = {
   resultMap?: ResultMap
+  transformMap?: TransformMap
   errorHandling?: ErrorHandlingMode
   typedError?: TypedErrorFn
 }
@@ -111,16 +120,24 @@ const createTauRPCProxy = <TRouter extends Router>(
 ) => {
   const argsMap = parseArgsMap(args)
   const resultMap = options.resultMap ?? {}
+  const transformMap = options.transformMap ?? {}
   const errorHandling = options.errorHandling ?? 'throw'
   const typedError = options.typedError
     ?? (errorHandling === 'result' ? resultTypedError : passthroughTypedError)
 
-  return nestedProxy(argsMap, resultMap, errorHandling, typedError) as TauRpcProxy<TRouter>
+  return nestedProxy(
+    argsMap,
+    resultMap,
+    transformMap,
+    errorHandling,
+    typedError,
+  ) as TauRpcProxy<TRouter>
 }
 
 const nestedProxy = (
   argsMaps: ArgsMap,
   resultMap: ResultMap,
+  transformMap: TransformMap,
   errorHandling: ErrorHandlingMode,
   typedError: TypedErrorFn,
   path: string[] = [],
@@ -144,19 +161,25 @@ const nestedProxy = (
             return async (listener: (args: unknown) => void) => {
               return await listen(
                 TAURPC_EVENT_NAME,
-                createEventHandlder(eventName, listener, argsMap),
+                createEventHandlder(
+                  eventName,
+                  listener,
+                  argsMap,
+                  transformMap[routePath]?.[methodName],
+                ),
               )
             }
           },
           apply(_target, _thisArg, args) {
-            const shouldWrapResult =
-              errorHandling === 'result' && resultMap[routePath]?.[methodName] === true
+            const shouldWrapResult = errorHandling === 'result'
+              && resultMap[routePath]?.[methodName] === true
 
             return handleProxyCall(
               nestedPath.join('.'),
               args,
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               argsMap[methodName]!,
+              transformMap[routePath]?.[methodName],
               shouldWrapResult,
               typedError,
             )
@@ -168,7 +191,14 @@ const nestedProxy = (
           path.startsWith(`${nestedPath.join('.')}.`)
         )
       ) {
-        return nestedProxy(argsMaps, resultMap, errorHandling, typedError, nestedPath)
+        return nestedProxy(
+          argsMaps,
+          resultMap,
+          transformMap,
+          errorHandling,
+          typedError,
+          nestedPath,
+        )
       } else {
         throw new Error(`'${nestedPath.join('.')}' not found`)
       }
@@ -180,6 +210,7 @@ const handleProxyCall = async (
   path: string,
   args: unknown[],
   procedureArgs: string[],
+  transform: MethodTransform | undefined,
   wrapResult: boolean,
   typedError: TypedErrorFn,
 ) => {
@@ -189,7 +220,7 @@ const handleProxyCall = async (
     const argName = procedureArgs[idx]
     if (!argName) throw new Error('Received invalid arguments')
 
-    const arg = args[idx]
+    const arg = transform?.args?.[idx]?.(args[idx]) ?? args[idx]
     if (typeof arg == 'function') {
       const channel = new Channel()
       channel.onmessage = arg as typeof channel.onmessage
@@ -203,14 +234,20 @@ const handleProxyCall = async (
     `TauRPC__${path}`,
     argsObject,
   )
+  const transformedResponse = transform?.result
+    ? response.then(transform.result)
+    : response
 
-  return wrapResult ? typedError(response) : await response
+  return wrapResult
+    ? typedError(transformedResponse)
+    : await transformedResponse
 }
 
 const createEventHandlder = (
   event_name: string,
   listener: ListenFn,
   args_map: ArgsMap[string],
+  transform: MethodTransform | undefined,
 ): EventCallback<Payload> => {
   return (event) => {
     if (event_name !== event.payload.event_name) return
@@ -222,14 +259,19 @@ const createEventHandlder = (
     const args = args_map[ev]
     if (!args) return
 
+    const input = event.payload.event.input_type
+
     if (args.length === 1) {
-      listener(event.payload.event.input_type)
-    } else if (Array.isArray(event.payload.event.input_type)) {
+      listener(transform?.eventArgs?.[0]?.(input) ?? input)
+    } else if (Array.isArray(input)) {
+      const transformed = input.map((value, idx) => {
+        return transform?.eventArgs?.[idx]?.(value) ?? value
+      })
       const _ = (listener as ((...args: unknown[]) => void))(
-        ...event.payload.event.input_type as unknown[],
+        ...transformed as unknown[],
       )
     } else {
-      listener(event.payload.event.input_type)
+      listener(input)
     }
   }
 }

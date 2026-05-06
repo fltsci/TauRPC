@@ -1,6 +1,6 @@
 use heck::ToLowerCamelCase;
 use specta::{
-    Types,
+    Format, Type, Types,
     datatype::{
         DataType, Field, Fields, Function, NamedReference, NamedReferenceType, Primitive,
         Reference, Struct,
@@ -34,17 +34,15 @@ pub(super) fn export_types(
     args_map: BTreeMap<String, String>,
     ts: Typescript,
     functions: BTreeMap<String, Vec<Function>>,
-    mut types: Types,
+    types: Types,
     export_runtime: ExportRuntimeConfig,
 ) -> Result<(), Error> {
-    types.iter_mut(|ndt| {
-        if let Some(ty) = ndt.ty.as_mut() {
-            rewrite_bigints_in_datatype(ty);
-        }
-    });
-
+    let types = hide_unused_std_result_type(&functions, types);
     let exporter: Exporter = ts.into();
     let user_header = exporter.header.clone();
+    let runtime_types = format_serde_types(&types, &export_runtime)?;
+    let format = TauRpcFormat::new(&export_runtime);
+    let export_runtime_for_runtime = export_runtime.clone();
 
     exporter
         .framework_prelude(FRAMEWORK_HEADER)
@@ -72,14 +70,28 @@ pub(super) fn export_types(
             );
             out.push_str(";\n\n");
 
+            out.push_str("export const TRANSFORM_MAP = ");
+            out.push_str(&generate_transform_map(
+                &functions,
+                &exporter,
+                &runtime_types,
+                &export_runtime_for_runtime,
+            )?);
+            out.push_str(";\n\n");
+
             out.push_str(
-                &generate_functions_router(&functions, &exporter, export_runtime.error_handling)
-                    .map_err(|err| Error::framework("failed to generate router type", err))?,
+                &generate_functions_router(
+                    &functions,
+                    &exporter,
+                    &runtime_types,
+                    &export_runtime_for_runtime,
+                )
+                .map_err(|err| Error::framework("failed to generate router type", err))?,
             );
 
             Ok(out.into())
         })
-        .export_to(export_path, &types, specta_serde::Format)?;
+        .export_to(export_path, &types, format)?;
 
     let bindings_path = Path::new(export_path);
     let proxy_path = bindings_path.with_file_name("proxy.ts");
@@ -136,11 +148,12 @@ fn write_proxy_file(
     let content = format!(
         "{user_prefix}{FRAMEWORK_HEADER}\n\
          import {{ createTauRPCProxy as createProxy, type InferCommandOutput, type TauRpcResult }} from '@fltsci/taurpc'\n\
-         import {{ ARGS_MAP, RESULT_MAP, type Router }} from './{bindings_stem}'\n\n\
+         import {{ ARGS_MAP, RESULT_MAP, TRANSFORM_MAP, type Router }} from './{bindings_stem}'\n\n\
          {typed_error_impl}\
          export const createTauRPCProxy = () => createProxy<Router>(ARGS_MAP, {{\n\
-           resultMap: RESULT_MAP,\n\
-           errorHandling: '{error_handling}',\n\
+         \x20\x20resultMap: RESULT_MAP,\n\
+         \x20\x20transformMap: TRANSFORM_MAP,\n\
+         \x20\x20errorHandling: '{error_handling}',\n\
          {typed_error_option}\
          }})\n\
          export type {{ InferCommandOutput, TauRpcResult }}\n"
@@ -153,7 +166,8 @@ fn write_proxy_file(
 fn generate_functions_router(
     functions: &BTreeMap<String, Vec<Function>>,
     exporter: &FrameworkExporter,
-    error_handling: ErrorHandlingMode,
+    runtime_types: &Types,
+    export_runtime: &ExportRuntimeConfig,
 ) -> Result<String, Error> {
     let mut router = Struct::named();
 
@@ -164,7 +178,8 @@ fn generate_functions_router(
 
         let mut path_router = Struct::named();
         for (_, function) in function_names_and_funcs {
-            let (name, field) = generate_function_field(function, exporter, error_handling)?;
+            let (name, field) =
+                generate_function_field(function, exporter, runtime_types, export_runtime)?;
             path_router = path_router.field(name, field);
         }
 
@@ -203,29 +218,58 @@ fn generate_result_map(
 fn generate_function_field(
     function: &Function,
     exporter: &FrameworkExporter,
-    error_handling: ErrorHandlingMode,
+    runtime_types: &Types,
+    export_runtime: &ExportRuntimeConfig,
 ) -> Result<(String, Field), Error> {
     let args = function
         .args()
         .iter()
         .map(|(name, typ)| {
-            render_reference_dt_for_phase(typ, Phase::Deserialize, exporter)
-                .map(|ty| format!("{}: {ty}", name.to_lower_camel_case()))
+            render_reference_dt_for_phase(
+                typ,
+                Phase::Deserialize,
+                Phase::Serialize,
+                exporter,
+                runtime_types,
+                export_runtime,
+            )
+            .map(|ty| format!("{}: {ty}", name.to_lower_camel_case()))
         })
         .collect::<Result<Vec<_>, _>>()?
         .join(", ");
 
     let return_ty = if let Some(result) = function.result() {
         if let Some((ok, err)) = extract_std_result(result, exporter.types) {
-            let ok_ty = render_reference_dt_for_phase(ok, Phase::Serialize, exporter)?;
-            let err_ty = render_reference_dt_for_phase(err, Phase::Serialize, exporter)?;
-            if error_handling == ErrorHandlingMode::Result {
+            let ok_ty = render_reference_dt_for_phase(
+                ok,
+                Phase::Serialize,
+                Phase::Deserialize,
+                exporter,
+                runtime_types,
+                export_runtime,
+            )?;
+            let err_ty = render_reference_dt_for_phase(
+                err,
+                Phase::Serialize,
+                Phase::Deserialize,
+                exporter,
+                runtime_types,
+                export_runtime,
+            )?;
+            if export_runtime.error_handling == ErrorHandlingMode::Result {
                 format!("TauRpcResult<{ok_ty}, {err_ty}>")
             } else {
                 ok_ty
             }
         } else {
-            render_reference_dt_for_phase(result, Phase::Serialize, exporter)?
+            render_reference_dt_for_phase(
+                result,
+                Phase::Serialize,
+                Phase::Deserialize,
+                exporter,
+                runtime_types,
+                export_runtime,
+            )?
         }
     } else {
         "void".to_string()
@@ -290,19 +334,318 @@ fn extract_std_result<'a>(
 
 fn render_reference_dt_for_phase(
     dt: &DataType,
-    phase: Phase,
+    serde_phase: Phase,
+    semantic_phase: Phase,
     exporter: &FrameworkExporter,
+    runtime_types: &Types,
+    export_runtime: &ExportRuntimeConfig,
 ) -> Result<String, Error> {
-    let dt =
-        specta_serde::select_phase_datatype(&rewrite_bigints_for_export(dt), exporter.types, phase);
+    let mut dt = if export_runtime.disable_serde_phases {
+        dt.clone()
+    } else {
+        specta_serde::select_phase_datatype(dt, exporter.types, serde_phase)
+    };
+
+    if let Some(semantic_types) = &export_runtime.semantic_types {
+        dt = apply_semantic_type_for_phase(&dt, semantic_phase, "v", runtime_types, semantic_types)
+            .and_then(|(dt, _)| dt)
+            .unwrap_or(dt);
+    }
+
+    if export_runtime.dangerously_cast_bigints_to_number {
+        rewrite_bigints_in_datatype(&mut dt);
+    }
 
     render_reference_dt(&dt, exporter)
 }
 
-fn rewrite_bigints_for_export(dt: &DataType) -> DataType {
-    let mut dt = dt.clone();
-    rewrite_bigints_in_datatype(&mut dt);
-    dt
+fn apply_semantic_type_for_phase(
+    dt: &DataType,
+    phase: Phase,
+    input: &str,
+    types: &Types,
+    semantic_types: &specta_typescript::semantic::Configuration,
+) -> Option<(Option<DataType>, String)> {
+    match phase {
+        Phase::Serialize => semantic_types.apply_serialize(types, dt, input),
+        Phase::Deserialize => semantic_types.apply_deserialize(types, dt, input),
+    }
+}
+
+fn generate_transform_map(
+    functions: &BTreeMap<String, Vec<Function>>,
+    exporter: &FrameworkExporter,
+    runtime_types: &Types,
+    export_runtime: &ExportRuntimeConfig,
+) -> Result<String, Error> {
+    let Some(semantic_types) = &export_runtime.semantic_types else {
+        return Ok("{}".to_string());
+    };
+
+    let mut routes = Vec::new();
+    for (path, path_functions) in functions {
+        let mut methods = Vec::new();
+        for function in path_functions {
+            let name = function.name().split_once("_taurpc_fn__").unwrap().1;
+            let mut args = Vec::new();
+            let mut event_args = Vec::new();
+            for (_, arg_dt) in function.args() {
+                let dt = select_dt_for_config(
+                    arg_dt,
+                    Phase::Deserialize,
+                    exporter.types,
+                    export_runtime,
+                );
+                let transform = apply_semantic_type_for_phase(
+                    &dt,
+                    Phase::Serialize,
+                    "v",
+                    runtime_types,
+                    semantic_types,
+                )
+                .map(|(_, runtime)| runtime)
+                .filter(|runtime| runtime != "v");
+
+                args.push(match transform {
+                    Some(transform) => format!("(v) => {transform}"),
+                    None => "null".to_string(),
+                });
+
+                let event_dt =
+                    select_dt_for_config(arg_dt, Phase::Serialize, exporter.types, export_runtime);
+                let event_transform = apply_semantic_type_for_phase(
+                    &event_dt,
+                    Phase::Deserialize,
+                    "v",
+                    runtime_types,
+                    semantic_types,
+                )
+                .map(|(_, runtime)| runtime)
+                .filter(|runtime| runtime != "v");
+
+                event_args.push(match event_transform {
+                    Some(transform) => format!("(v) => {transform}"),
+                    None => "null".to_string(),
+                });
+            }
+
+            let result = function.result().and_then(|dt| {
+                let dt = extract_std_result(dt, exporter.types)
+                    .map(|(ok, _)| ok)
+                    .unwrap_or(dt);
+                let dt = select_dt_for_config(dt, Phase::Serialize, exporter.types, export_runtime);
+                apply_semantic_type_for_phase(
+                    &dt,
+                    Phase::Deserialize,
+                    "v",
+                    runtime_types,
+                    semantic_types,
+                )
+                .map(|(_, runtime)| runtime)
+                .filter(|runtime| runtime != "v")
+            });
+
+            if args.iter().any(|arg| arg != "null")
+                || event_args.iter().any(|arg| arg != "null")
+                || result.is_some()
+            {
+                let result = result
+                    .map(|transform| format!("(v) => {transform}"))
+                    .unwrap_or_else(|| "null".to_string());
+                methods.push(format!(
+                    "{}: {{ args: [{}], eventArgs: [{}], result: {} }}",
+                    serde_json::to_string(name)
+                        .map_err(|err| Error::framework("error stringify transform name", err))?,
+                    args.join(", "),
+                    event_args.join(", "),
+                    result
+                ));
+            }
+        }
+
+        if !methods.is_empty() {
+            routes.push(format!(
+                "{}: {{ {} }}",
+                serde_json::to_string(path)
+                    .map_err(|err| Error::framework("error stringify transform path", err))?,
+                methods.join(", ")
+            ));
+        }
+    }
+
+    Ok(format!("{{ {} }}", routes.join(", ")))
+}
+
+fn select_dt_for_config(
+    dt: &DataType,
+    phase: Phase,
+    types: &Types,
+    export_runtime: &ExportRuntimeConfig,
+) -> DataType {
+    if export_runtime.disable_serde_phases {
+        dt.clone()
+    } else {
+        specta_serde::select_phase_datatype(dt, types, phase)
+    }
+}
+
+fn format_serde_types(types: &Types, export_runtime: &ExportRuntimeConfig) -> Result<Types, Error> {
+    let types = if export_runtime.disable_serde_phases {
+        specta_serde::Format.map_types(types)
+    } else {
+        specta_serde::PhasesFormat.map_types(types)
+    }
+    .map_err(|err| Error::framework("failed to format serde types", err))?;
+
+    Ok(types.into_owned())
+}
+
+fn hide_unused_std_result_type(
+    functions: &BTreeMap<String, Vec<Function>>,
+    mut types: Types,
+) -> Types {
+    let result_is_used = functions.values().flatten().any(|function| {
+        function
+            .args()
+            .iter()
+            .any(|(_, dt)| datatype_contains_std_result(dt, &types))
+            || function.result().is_some_and(|dt| {
+                if let Some((ok, err)) = extract_std_result(dt, &types) {
+                    datatype_contains_std_result(ok, &types)
+                        || datatype_contains_std_result(err, &types)
+                } else {
+                    datatype_contains_std_result(dt, &types)
+                }
+            })
+    });
+
+    if result_is_used {
+        return types;
+    }
+
+    types.iter_mut(|ndt| {
+        if is_std_result_ndt(ndt.name.as_ref(), ndt.module_path.as_ref()) {
+            ndt.ty = None;
+        }
+    });
+
+    types
+}
+
+fn datatype_contains_std_result(dt: &DataType, types: &Types) -> bool {
+    match dt {
+        DataType::Reference(Reference::Named(r)) => {
+            if let Some(ndt) = types.get(r)
+                && is_std_result_ndt(ndt.name.as_ref(), ndt.module_path.as_ref())
+            {
+                return true;
+            }
+
+            named_reference_generics(r)
+                .iter()
+                .any(|(_, dt)| datatype_contains_std_result(dt, types))
+        }
+        DataType::List(list) => datatype_contains_std_result(&list.ty, types),
+        DataType::Map(map) => {
+            datatype_contains_std_result(map.key_ty(), types)
+                || datatype_contains_std_result(map.value_ty(), types)
+        }
+        DataType::Struct(strct) => fields_contain_std_result(&strct.fields, types),
+        DataType::Enum(enm) => enm
+            .variants
+            .iter()
+            .any(|(_, variant)| fields_contain_std_result(&variant.fields, types)),
+        DataType::Tuple(tuple) => tuple
+            .elements
+            .iter()
+            .any(|dt| datatype_contains_std_result(dt, types)),
+        DataType::Nullable(inner) => datatype_contains_std_result(inner, types),
+        DataType::Intersection(items) => items
+            .iter()
+            .any(|dt| datatype_contains_std_result(dt, types)),
+        DataType::Primitive(_)
+        | DataType::Generic(_)
+        | DataType::Reference(Reference::Opaque(_)) => false,
+    }
+}
+
+fn fields_contain_std_result(fields: &Fields, types: &Types) -> bool {
+    match fields {
+        Fields::Unit => false,
+        Fields::Unnamed(fields) => fields.fields.iter().any(|field| {
+            field
+                .ty
+                .as_ref()
+                .is_some_and(|dt| datatype_contains_std_result(dt, types))
+        }),
+        Fields::Named(fields) => fields.fields.iter().any(|(_, field)| {
+            field
+                .ty
+                .as_ref()
+                .is_some_and(|dt| datatype_contains_std_result(dt, types))
+        }),
+    }
+}
+
+fn is_std_result_ndt(name: &str, module_path: &str) -> bool {
+    name == "Result"
+        && (module_path == "std::result"
+            || module_path == "core::result"
+            || module_path.contains("result"))
+}
+
+#[derive(Debug, Clone)]
+struct TauRpcFormat {
+    export_runtime: ExportRuntimeConfig,
+}
+
+impl TauRpcFormat {
+    fn new(export_runtime: &ExportRuntimeConfig) -> Self {
+        Self {
+            export_runtime: export_runtime.clone(),
+        }
+    }
+}
+
+impl Format for TauRpcFormat {
+    fn map_types(&'_ self, types: &Types) -> Result<Cow<'_, Types>, specta::FormatError> {
+        let mut types = format_serde_types(types, &self.export_runtime)
+            .map_err(|err| Box::new(err) as specta::FormatError)?;
+
+        if let Some(semantic_types) = &self.export_runtime.semantic_types {
+            types = semantic_types.apply_types(&types).into_owned();
+        }
+
+        if self.export_runtime.dangerously_cast_bigints_to_number {
+            types.iter_mut(|ndt| {
+                if let Some(ty) = ndt.ty.as_mut() {
+                    rewrite_bigints_in_datatype(ty);
+                }
+            });
+        }
+
+        Ok(Cow::Owned(types))
+    }
+
+    fn map_type(
+        &'_ self,
+        types: &Types,
+        dt: &DataType,
+    ) -> Result<Cow<'_, DataType>, specta::FormatError> {
+        let mut dt = if self.export_runtime.disable_serde_phases {
+            specta_serde::Format.map_type(types, dt)
+        } else {
+            specta_serde::PhasesFormat.map_type(types, dt)
+        }?;
+
+        if self.export_runtime.dangerously_cast_bigints_to_number {
+            let mut owned = dt.into_owned();
+            rewrite_bigints_in_datatype(&mut owned);
+            dt = Cow::Owned(owned);
+        }
+
+        Ok(dt)
+    }
 }
 
 fn rewrite_bigints_in_datatype(dt: &mut DataType) {
@@ -326,6 +669,11 @@ fn rewrite_bigints_in_datatype(dt: &mut DataType) {
         }
     }
 
+    if *dt == <specta_typescript::BigInt as Type>::definition(&mut Types::default()) {
+        *dt = <specta_typescript::Number as Type>::definition(&mut Types::default());
+        return;
+    }
+
     match dt {
         DataType::Primitive(primitive) => match primitive {
             Primitive::usize
@@ -333,8 +681,9 @@ fn rewrite_bigints_in_datatype(dt: &mut DataType) {
             | Primitive::u64
             | Primitive::i64
             | Primitive::u128
-            | Primitive::i128
-            | Primitive::f128 => *dt = DataType::Primitive(Primitive::f64),
+            | Primitive::i128 => {
+                *dt = <specta_typescript::Number as Type>::definition(&mut Types::default())
+            }
             _ => {}
         },
         DataType::List(list) => rewrite_bigints_in_datatype(&mut list.ty),

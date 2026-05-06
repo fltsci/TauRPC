@@ -9,6 +9,7 @@ pub extern crate specta;
 use specta::Types;
 use specta::datatype::Function;
 pub use specta_typescript::Typescript;
+pub use specta_typescript::semantic;
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
@@ -38,6 +39,24 @@ pub enum ErrorHandlingMode {
 pub(crate) struct ExportRuntimeConfig {
     error_handling: ErrorHandlingMode,
     typed_error_impl: Cow<'static, str>,
+    semantic_types: Option<semantic::Configuration>,
+    dangerously_cast_bigints_to_number: bool,
+    disable_serde_phases: bool,
+}
+
+/// Configuration for [`create_ipc_handler_with_export_config`].
+#[derive(Debug, Clone, Default)]
+pub struct CreateIpcHandlerConfig {
+    /// Controls how `Result<T, E>` procedure outputs are represented in generated TypeScript.
+    pub error_handling: ErrorHandlingMode,
+    /// Replacement implementation for the generated `typedError` runtime helper.
+    pub typed_error_impl: Cow<'static, str>,
+    /// Optional semantic frontend type handling configuration.
+    pub semantic_types: Option<semantic::Configuration>,
+    /// Dangerously export BigInt-style Rust integers as TypeScript `number`.
+    pub dangerously_cast_bigints_to_number: bool,
+    /// Disable phase-aware serde export handling and use unified serde mode.
+    pub disable_serde_phases: bool,
 }
 
 /// A trait, which is automatically implemented by `#[taurpc::procedures]`, that is used for handling incoming requests
@@ -115,12 +134,33 @@ pub fn create_ipc_handler_with_config<H, R: Runtime>(
 where
     H: TauRpcHandler<R> + Send + Sync + 'static + Clone,
 {
+    create_ipc_handler_with_export_config(
+        procedures,
+        CreateIpcHandlerConfig {
+            error_handling,
+            typed_error_impl: typed_error_impl.into(),
+            ..Default::default()
+        },
+    )
+}
+
+/// Same as [`create_ipc_handler`] but allows configuring generated frontend bindings.
+pub fn create_ipc_handler_with_export_config<H, R: Runtime>(
+    procedures: H,
+    config: CreateIpcHandlerConfig,
+) -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static
+where
+    H: TauRpcHandler<R> + Send + Sync + 'static + Clone,
+{
     let args_map = BTreeMap::from([(H::PATH_PREFIX.to_string(), H::args_map())]);
     let mut types = Types::default();
     let functions = BTreeMap::from([(H::PATH_PREFIX.to_string(), H::collect_fn_types(&mut types))]);
     let export_runtime = ExportRuntimeConfig {
-        error_handling,
-        typed_error_impl: typed_error_impl.into(),
+        error_handling: config.error_handling,
+        typed_error_impl: config.typed_error_impl,
+        semantic_types: config.semantic_types,
+        dangerously_cast_bigints_to_number: config.dangerously_cast_bigints_to_number,
+        disable_serde_phases: config.disable_serde_phases,
     };
 
     // Only export in development mode and export_path not none
@@ -305,6 +345,27 @@ impl<R: Runtime> Router<R> {
     /// The function must be named `typedError` and match the runtime contract.
     pub fn typed_error_impl(mut self, runtime: impl Into<Cow<'static, str>>) -> Self {
         self.export_runtime_config.typed_error_impl = runtime.into();
+        self
+    }
+
+    /// Enable semantic frontend type handling for exported bindings.
+    pub fn semantic_types(mut self, semantic_types: semantic::Configuration) -> Self {
+        self.export_runtime_config.semantic_types = Some(semantic_types);
+        self
+    }
+
+    /// Dangerously export BigInt-style Rust integers as TypeScript `number`.
+    ///
+    /// This may truncate or lose precision for large values.
+    pub fn dangerously_cast_bigints_to_number(mut self) -> Self {
+        self.export_runtime_config
+            .dangerously_cast_bigints_to_number = true;
+        self
+    }
+
+    /// Disable phase-aware serde export handling and use unified serde mode.
+    pub fn disable_serde_phases(mut self) -> Self {
+        self.export_runtime_config.disable_serde_phases = true;
         self
     }
 
