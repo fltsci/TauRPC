@@ -3,7 +3,7 @@
 
 use std::{sync::Arc, time::Duration};
 use tauri::{AppHandle, EventTarget, Manager, Runtime, WebviewWindow, Window, ipc::Channel};
-use taurpc::Router;
+use taurpc::{ErrorHandlingMode, Router};
 use tokio::{
     sync::{Mutex, oneshot},
     time::sleep,
@@ -243,6 +243,7 @@ async fn main() {
 
     let router = Router::new()
         .export_config(specta_typescript::Typescript::default().header("// My header"))
+        .error_handling(ErrorHandlingMode::Result)
         .merge(
             ApiImpl {
                 state: Arc::new(Mutex::new("state".to_string())),

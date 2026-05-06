@@ -27,10 +27,42 @@ export type User = {
 	last_name: string,
 };
 
+export type TauRpcResult<T, E> = { status: 'ok'; data: T } | { status: 'error'; error: E };
+
 export const ARGS_MAP = {
   "": "{\"ev\":[\"updated_value\"],\"get_app_handle\":[],\"get_webview_window\":[],\"get_window\":[],\"method_with_alias\":[],\"multiple_args\":[\"arg\",\"arg2\"],\"phase_specific_rename\":[\"input\"],\"test_bigint\":[\"num\"],\"test_io\":[\"_user\"],\"test_option\":[],\"test_result\":[\"user\"],\"update_state\":[\"new_value\"],\"vec_test\":[\"arg\"],\"with_channel\":[\"on_event\"],\"with_sleep\":[]}",
   "api.ui": "{\"test_ev\":[],\"trigger\":[]}",
   "events": "{\"multiple_args\":[\"arg1\",\"arg2\"],\"state_changed\":[\"new_state\"],\"test_ev\":[],\"vec_test\":[\"args\"]}"
+};
+
+export const RESULT_MAP = {
+  "": {
+    "ev": false,
+    "get_app_handle": false,
+    "get_webview_window": false,
+    "get_window": false,
+    "method_with_alias": false,
+    "multiple_args": false,
+    "phase_specific_rename": false,
+    "test_bigint": false,
+    "test_io": false,
+    "test_option": false,
+    "test_result": true,
+    "update_state": false,
+    "vec_test": false,
+    "with_channel": false,
+    "with_sleep": false
+  },
+  "api.ui": {
+    "test_ev": false,
+    "trigger": false
+  },
+  "events": {
+    "multiple_args": false,
+    "state_changed": false,
+    "test_ev": false,
+    "vec_test": false
+  }
 };
 
 export type Router = {
@@ -45,7 +77,7 @@ export type Router = {
 		test_bigint: (num: number) => Promise<number>,
 		test_io: (user: User) => Promise<User>,
 		test_option: () => Promise<null>,
-		test_result: (user: User) => Promise<User>,
+		test_result: (user: User) => Promise<TauRpcResult<User, string>>,
 		update_state: (newValue: string) => Promise<void>,
 		vec_test: (arg: string[]) => Promise<void>,
 		with_channel: (onEvent: (response: Update) => void) => Promise<void>,
@@ -62,4 +94,3 @@ export type Router = {
 		vec_test: (args: string[]) => Promise<void>,
 	},
 };
-
