@@ -151,7 +151,7 @@ const nestedProxy = (
       if (methodName === 'then') return {}
 
       if (argsMap && methodName in argsMap) {
-        return new window.Proxy(() => {
+        return new Proxy(() => {
           // Empty fn
         }, {
           get: (_target, prop, _receiver) => {
