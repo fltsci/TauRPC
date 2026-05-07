@@ -25,11 +25,11 @@ export type Update = {
 
 /** Doc comments are also generated */
 export type User = {
-	/** Doc comments are also generated */
+	/**  The user's id */
 	uid: number,
-	/** Doc comments are also generated */
+	/**  The user's first name */
 	first_name: string,
-	/** Doc comments are also generated */
+	/**  The user's last name */
 	last_name: string,
 };
 
@@ -73,7 +73,7 @@ export const RESULT_MAP = {
   }
 };
 
-export const TRANSFORM_MAP = { "": { "semantic_types_event": { args: [(v: any) => ({...v,bytes:[...v.bytes]})], eventArgs: [(v: any) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)})], result: null }, "semantic_types": { args: [(v: any) => ({...v,bytes:[...v.bytes]}), (v: any) => { const transform = (response: any) => ({...response,date:new Date(response.date),bytes:new Uint8Array(response.bytes),url:new URL(response.url)}); if (typeof v === "function") return (response: any) => v(transform(response)); const onmessage = v.onmessage; v.onmessage = (response: any) => onmessage(transform(response)); return v }], eventArgs: [(v: any) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}), null], result: (v: any) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}) } } };
+export const TRANSFORM_MAP = { "": { "semantic_types_event": { args: [(v) => ({...v,bytes:[...v.bytes]})], eventArgs: [(v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)})], result: null }, "semantic_types": { args: [(v) => ({...v,bytes:[...v.bytes]}), (v) => { const transform = (response) => ({...response,date:new Date(response.date),bytes:new Uint8Array(response.bytes),url:new URL(response.url)}); if (typeof v === "function") return (response) => v(transform(response)); const onmessage = v.onmessage; v.onmessage = (response) => onmessage(transform(response)); return v }], eventArgs: [(v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}), null], result: (v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}) } } };
 
 export type Router = {
 	"": {
@@ -106,3 +106,4 @@ export type Router = {
 		vec_test: (args: string[]) => Promise<void>,
 	},
 };
+

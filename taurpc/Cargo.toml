@@ -34,7 +34,7 @@ tokio = { version = "1", features = ["full"] }
 
 # TODO: Remove patches
 [patch.crates-io]
-specta = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
-specta-typescript = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
-specta-serde = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
-specta-util = { git = "https://github.com/specta-rs/specta.git", rev = "34f7c14c9698f9de7d56ebbeebfdb8e1b781e694" }
+specta = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }
+specta-typescript = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }
+specta-serde = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }
+specta-util = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }

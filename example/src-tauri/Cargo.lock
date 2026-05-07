@@ -2960,7 +2960,7 @@ dependencies = [
 [[package]]
 name = "specta"
 version = "2.0.0-rc.24"
-source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
+source = "git+https://github.com/specta-rs/specta.git?rev=4131784469721e1bb9eb0845960a2963eb0fbdd1#4131784469721e1bb9eb0845960a2963eb0fbdd1"
 dependencies = [
  "bytes",
  "chrono",
@@ -2973,7 +2973,7 @@ dependencies = [
 [[package]]
 name = "specta-macros"
 version = "2.0.0-rc.24"
-source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
+source = "git+https://github.com/specta-rs/specta.git?rev=4131784469721e1bb9eb0845960a2963eb0fbdd1#4131784469721e1bb9eb0845960a2963eb0fbdd1"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -2984,7 +2984,7 @@ dependencies = [
 [[package]]
 name = "specta-serde"
 version = "0.0.11"
-source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
+source = "git+https://github.com/specta-rs/specta.git?rev=4131784469721e1bb9eb0845960a2963eb0fbdd1#4131784469721e1bb9eb0845960a2963eb0fbdd1"
 dependencies = [
  "specta",
  "specta-macros",
@@ -2993,7 +2993,7 @@ dependencies = [
 [[package]]
 name = "specta-typescript"
 version = "0.0.11"
-source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
+source = "git+https://github.com/specta-rs/specta.git?rev=4131784469721e1bb9eb0845960a2963eb0fbdd1#4131784469721e1bb9eb0845960a2963eb0fbdd1"
 dependencies = [
  "specta",
 ]
@@ -4887,4 +4887,4 @@ checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
 [[patch.unused]]
 name = "specta-util"
 version = "0.0.11"
-source = "git+https://github.com/specta-rs/specta.git?rev=34f7c14c9698f9de7d56ebbeebfdb8e1b781e694#34f7c14c9698f9de7d56ebbeebfdb8e1b781e694"
+source = "git+https://github.com/specta-rs/specta.git?rev=4131784469721e1bb9eb0845960a2963eb0fbdd1#4131784469721e1bb9eb0845960a2963eb0fbdd1"
