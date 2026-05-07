@@ -1,5 +1,39 @@
 # taurpc
 
+## 2.0.0-canary.6
+
+### Patch Changes
+
+- [#24](https://github.com/fltsci/TauRPC/pull/24) [`a0b7c5b`](https://github.com/fltsci/TauRPC/commit/a0b7c5b800d5af4ba8b63eee1d77355b06261358) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Bump dprint to current 2025 plugin/CLI versions and relax `operatorPosition` to `maintain`.
+
+  Plugin/CLI bumps:
+
+  - dprint CLI 0.50.2 -> 0.54.0
+  - dprint-plugin-typescript 0.85.1 -> 0.96.0
+  - dprint-plugin-json 0.17.4 -> 0.21.3
+  - dprint-plugin-markdown 0.15.3 -> 0.21.1
+  - dprint-plugin-exec 0.4.3 -> 0.6.2
+
+  Config tweak: `binaryExpression.operatorPosition`, `conditionalExpression.operatorPosition`, and `conditionalType.operatorPosition` are set to `maintain`. The previous default (`nextLine`) forced a specific multi-line style for `&&`, `||`, and ternaries. `maintain` accepts whatever the writer used, which is friendlier for external contributors and removes a category of "works locally, fails CI" drift.
+
+  No source files reformat as a result of these changes; running `dprint fmt` on main is a no-op after the bump.
+
+- [#23](https://github.com/fltsci/TauRPC/pull/23) [`fe1c820`](https://github.com/fltsci/TauRPC/commit/fe1c8200644e7a6c4d7c367620123fd146d7f796) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Disable the `@typescript-eslint/no-unsafe-*` rule family for `src/index.ts`.
+
+  The runtime proxy dispatcher receives serialized values, applies user-supplied transforms, and forwards them. Static types cannot describe that flow without defeating the purpose; the typed contract lives in generated Specta bindings, not the dispatcher. The rules stay active for the rest of the codebase.
+
+- [#27](https://github.com/fltsci/TauRPC/pull/27) [`8c705f1`](https://github.com/fltsci/TauRPC/commit/8c705f185ac476e55726b8f0298733c9d1105edc) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Add Rust toolchain setup step to the Release workflow.
+
+  #26 pinned the Rust toolchain via `rust-toolchain.toml` and added a `dtolnay/rust-toolchain` setup step to `.github/workflows/main.yml` (CI). The Release workflow's "Sync formatting if necessary" step also runs `pnpm format` -> `dprint fmt` -> shells to `rustfmt`, but had no setup step. With no pre-installed 1.95.0 toolchain on the runner, dprint's parallel rustfmt invocations all triggered concurrent rustup auto-installs that raced on the `~/.rustup/downloads/*.partial` rename, surfacing as "component download failed: No such file or directory" errors.
+
+  Mirroring the CI step into the Release workflow installs the toolchain serially before the parallel formatter runs.
+
+- [#26](https://github.com/fltsci/TauRPC/pull/26) [`7b51a1f`](https://github.com/fltsci/TauRPC/commit/7b51a1f2a70c9378287f6f88a09b5aa76a194c15) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Pin Rust toolchain to 1.95.0 via `rust-toolchain.toml`.
+
+  dprint's exec plugin shells out to `rustfmt --edition 2024` for `.rs` files, but neither CI (`ubuntu-latest`) nor contributor environments had a pinned `rustfmt` version. Different rustfmt builds produce different layouts for `if let` / let-chain bodies even with the same `--edition` flag, which surfaced as "works locally, fails CI" formatter drift. Pinning makes CI deterministic.
+
+  Components: `rustfmt`, `clippy`. Contributors with `rustup` will auto-fetch 1.95.0 on first use; no extra setup needed.
+
 ## 2.0.0-canary.5
 
 ### Patch Changes
