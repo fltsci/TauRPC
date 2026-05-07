@@ -280,14 +280,12 @@ fn generate_function_field(
         name.to_string(),
         Field::new(DataType::Reference(define(format!(
             "({args}) => Promise<{return_ty}>"
-        ))))
-        .into(),
+        )))),
     ))
 }
 
 fn render_reference_dt(dt: &DataType, exporter: &FrameworkExporter) -> Result<String, Error> {
-    if let Some(r) = tauri_channel_reference(dt, exporter.types)
-    {
+    if let Some(r) = tauri_channel_reference(dt, exporter.types) {
         let generic = if let Some((_, dt)) = named_reference_generics(r).first() {
             match &dt {
                 DataType::Reference(r) => exporter.reference(r)?,
@@ -399,7 +397,8 @@ fn generate_transform_map(
             let mut args = Vec::new();
             let mut event_args = Vec::new();
             for (_, arg_dt) in function.args() {
-                let transform = if let Some(channel) = tauri_channel_reference(arg_dt, exporter.types)
+                let transform = if let Some(channel) =
+                    tauri_channel_reference(arg_dt, exporter.types)
                     && let Some((_, response_dt)) = named_reference_generics(channel).first()
                 {
                     let response_dt = select_dt_for_config(
