@@ -20,15 +20,8 @@ tokio = { version = "1.48.0", features = ["full"] }
 thiserror = "2.0.17"
 
 taurpc = { path = "../../taurpc" }
-specta = { version = "=2.0.0-rc.24", features = ["derive", "chrono", "bytes", "url"] }
-specta-typescript = "0.0.11"
+specta = { version = "=2.0.0-rc.25", features = ["derive", "chrono", "bytes", "url"] }
+specta-typescript = "0.0.12"
 chrono = { version = "0.4.44", features = ["serde"] }
 bytes = { version = "1.11.1", features = ["serde"] }
 url = { version = "2.5.8", features = ["serde"] }
-
-# TODO: Remove patches
-[patch.crates-io]
-specta = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }
-specta-typescript = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }
-specta-serde = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }
-specta-util = { git = "https://github.com/specta-rs/specta.git", rev = "4131784469721e1bb9eb0845960a2963eb0fbdd1" }

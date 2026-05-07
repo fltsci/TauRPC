@@ -319,7 +319,7 @@ fn tauri_channel_reference<'a>(dt: &'a DataType, types: &'a Types) -> Option<&'a
 fn named_reference_generics(r: &NamedReference) -> &[(specta::datatype::Generic, DataType)] {
     match &r.inner {
         NamedReferenceType::Reference { generics, .. } => generics,
-        NamedReferenceType::Inline { .. } | NamedReferenceType::Recursive => &[],
+        NamedReferenceType::Inline { .. } | NamedReferenceType::Recursive(_) => &[],
     }
 }
 
