@@ -13,25 +13,67 @@ export type PhaseSpecificRename_Serialize = {
 	serialized_value: string,
 };
 
+export type SemanticTypes = {
+	date: Date,
+	bytes: Uint8Array,
+	url: URL,
+};
+
 export type Update = {
 	progress: number,
 };
 
-//Doc comments are also generated
+/** Doc comments are also generated */
 export type User = {
-	// The user's id
+	/**  The user's id */
 	uid: number,
-	// The user's first name
+	/**  The user's first name */
 	first_name: string,
-	// The user's last name
+	/**  The user's last name */
 	last_name: string,
 };
 
+export type TauRpcResult<T, E> = { status: 'ok'; data: T } | { status: 'error'; error: E };
+
 export const ARGS_MAP = {
-  "": "{\"ev\":[\"updated_value\"],\"get_app_handle\":[],\"get_webview_window\":[],\"get_window\":[],\"method_with_alias\":[],\"multiple_args\":[\"arg\",\"arg2\"],\"phase_specific_rename\":[\"input\"],\"test_bigint\":[\"num\"],\"test_io\":[\"_user\"],\"test_option\":[],\"test_result\":[\"user\"],\"update_state\":[\"new_value\"],\"vec_test\":[\"arg\"],\"with_channel\":[\"on_event\"],\"with_sleep\":[]}",
+  "": "{\"ev\":[\"updated_value\"],\"get_app_handle\":[],\"get_webview_window\":[],\"get_window\":[],\"method_with_alias\":[],\"multiple_args\":[\"arg\",\"arg2\"],\"phase_specific_rename\":[\"input\"],\"semantic_types\":[\"input\",\"channel\"],\"semantic_types_event\":[\"input\"],\"test_bigint\":[\"num\"],\"test_io\":[\"_user\"],\"test_option\":[],\"test_result\":[\"user\"],\"update_state\":[\"new_value\"],\"vec_test\":[\"arg\"],\"with_channel\":[\"on_event\"],\"with_sleep\":[]}",
   "api.ui": "{\"test_ev\":[],\"trigger\":[]}",
   "events": "{\"multiple_args\":[\"arg1\",\"arg2\"],\"state_changed\":[\"new_state\"],\"test_ev\":[],\"vec_test\":[\"args\"]}"
 };
+
+export const RESULT_MAP = {
+  "": {
+    "ev": false,
+    "get_app_handle": false,
+    "get_webview_window": false,
+    "get_window": false,
+    "method_with_alias": false,
+    "multiple_args": false,
+    "phase_specific_rename": false,
+    "semantic_types": false,
+    "semantic_types_event": false,
+    "test_bigint": false,
+    "test_io": false,
+    "test_option": false,
+    "test_result": true,
+    "update_state": false,
+    "vec_test": false,
+    "with_channel": false,
+    "with_sleep": false
+  },
+  "api.ui": {
+    "test_ev": false,
+    "trigger": false
+  },
+  "events": {
+    "multiple_args": false,
+    "state_changed": false,
+    "test_ev": false,
+    "vec_test": false
+  }
+};
+
+export const TRANSFORM_MAP = { "": { "semantic_types_event": { args: [(v) => ({...v,bytes:[...v.bytes]})], eventArgs: [(v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)})], result: null }, "semantic_types": { args: [(v) => ({...v,bytes:[...v.bytes]}), (v) => { const transform = (response) => ({...response,date:new Date(response.date),bytes:new Uint8Array(response.bytes),url:new URL(response.url)}); if (typeof v === "function") return (response) => v(transform(response)); const onmessage = v.onmessage; v.onmessage = (response) => onmessage(transform(response)); return v }], eventArgs: [(v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}), null], result: (v) => ({...v,date:new Date(v.date),bytes:new Uint8Array(v.bytes),url:new URL(v.url)}) } } };
 
 export type Router = {
 	"": {
@@ -42,10 +84,12 @@ export type Router = {
 		method_with_alias: () => Promise<void>,
 		multiple_args: (arg: string[], arg2: string) => Promise<void>,
 		phase_specific_rename: (input: PhaseSpecificRename_Deserialize) => Promise<PhaseSpecificRename_Serialize>,
+		semantic_types: (input: SemanticTypes, channel: (response: SemanticTypes) => void) => Promise<SemanticTypes>,
+		semantic_types_event: (input: SemanticTypes) => Promise<void>,
 		test_bigint: (num: number) => Promise<number>,
 		test_io: (user: User) => Promise<User>,
 		test_option: () => Promise<null>,
-		test_result: (user: User) => Promise<User>,
+		test_result: (user: User) => Promise<TauRpcResult<User, Error>>,
 		update_state: (newValue: string) => Promise<void>,
 		vec_test: (arg: string[]) => Promise<void>,
 		with_channel: (onEvent: (response: Update) => void) => Promise<void>,

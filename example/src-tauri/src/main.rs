@@ -3,7 +3,7 @@
 
 use std::{sync::Arc, time::Duration};
 use tauri::{AppHandle, EventTarget, Manager, Runtime, WebviewWindow, Window, ipc::Channel};
-use taurpc::Router;
+use taurpc::{ErrorHandlingMode, Router};
 use tokio::{
     sync::{Mutex, oneshot},
     time::sleep,
@@ -53,6 +53,14 @@ struct PhaseSpecificRename {
     value: String,
 }
 
+#[derive(Debug)]
+#[taurpc::ipc_type]
+pub struct SemanticTypes {
+    date: chrono::DateTime<chrono::Utc>,
+    bytes: bytes::Bytes,
+    url: url::Url,
+}
+
 // #[taurpc::procedures(event_trigger = ApiEventTrigger)]
 #[taurpc::procedures(event_trigger = ApiEventTrigger, export_to = "../src/lib/bindings.ts")]
 trait Api {
@@ -81,6 +89,9 @@ trait Api {
     #[taurpc(event)]
     async fn ev(updated_value: String);
 
+    #[taurpc(event)]
+    async fn semantic_types_event(input: SemanticTypes);
+
     async fn vec_test(arg: Vec<String>);
 
     async fn multiple_args(arg: Vec<String>, arg2: String);
@@ -90,6 +101,12 @@ trait Api {
     async fn with_channel(on_event: Channel<Update>);
 
     async fn phase_specific_rename(input: PhaseSpecificRename) -> PhaseSpecificRename;
+
+    async fn semantic_types(
+        app_handle: AppHandle<impl Runtime>,
+        input: SemanticTypes,
+        channel: Channel<SemanticTypes>,
+    ) -> SemanticTypes;
 }
 
 #[derive(Clone)]
@@ -169,6 +186,20 @@ impl Api for ApiImpl {
     async fn phase_specific_rename(self, input: PhaseSpecificRename) -> PhaseSpecificRename {
         input
     }
+
+    async fn semantic_types(
+        self,
+        app_handle: AppHandle<impl Runtime>,
+        input: SemanticTypes,
+        channel: Channel<SemanticTypes>,
+    ) -> SemanticTypes {
+        println!("{input:?}");
+        channel.send(input.clone()).unwrap();
+        ApiEventTrigger::new(app_handle)
+            .semantic_types_event(input.clone())
+            .unwrap();
+        input
+    }
 }
 
 #[taurpc::procedures(path = "events", export_to = "../src/lib/bindings.ts")]
@@ -243,6 +274,14 @@ async fn main() {
 
     let router = Router::new()
         .export_config(specta_typescript::Typescript::default().header("// My header"))
+        // This enables typesafe error handlinga
+        .error_handling(ErrorHandlingMode::Result)
+        // This enables `Date`, `Uint8Array`, and `URL` for supported types.
+        .semantic_types(specta_typescript::semantic::Configuration::default())
+        // This can be used if you don't want per-phase (Serialize/Deserialize) types.
+        // .disable_serde_phases()
+        // This isn't recommended as it allows large numbers to be truncated at runtime when being sent to the webview.
+        .dangerously_cast_bigints_to_number()
         .merge(
             ApiImpl {
                 state: Arc::new(Mutex::new("state".to_string())),
