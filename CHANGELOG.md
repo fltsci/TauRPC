@@ -1,5 +1,15 @@
 # taurpc
 
+## 2.0.0-canary.7
+
+### Patch Changes
+
+- [#28](https://github.com/fltsci/TauRPC/pull/28) [`ccfcbea`](https://github.com/fltsci/TauRPC/commit/ccfcbeaf4e27cdb6db965af29b3d9e1c1863c277) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Bump specta to 2.0.0-rc.25 (and specta-typescript / specta-serde to 0.0.12).
+
+  Rewrites `taurpc/src/export.rs` and the surrounding internals against specta's new visitor-based type-walking API (the rc.25 release removed the in-place `*_mut` accessors on `Struct`/`Enum`/`Tuple`/`Fields` and reshaped `Reference`/`NamedReference`). Generated TS bindings are unchanged at the user-facing level; the proxy and dispatcher pick up the new specta render shape in `src/index.ts` accordingly.
+
+  Rust consumers will need to bump their own `specta` dep to `=2.0.0-rc.25` in lockstep, since `=` exact-version pinning makes any rc skew a resolver collision.
+
 ## 2.0.0-canary.6
 
 ### Patch Changes
@@ -84,11 +94,11 @@
     createTauRPCProxy,
     type InferCommandOutput,
     type Router,
-  } from './taurpc/bindings'
+  } from "./taurpc/bindings";
 
   // after
-  import type { Router } from './taurpc/bindings'
-  import { createTauRPCProxy, type InferCommandOutput } from './taurpc/proxy'
+  import type { Router } from "./taurpc/bindings";
+  import { createTauRPCProxy, type InferCommandOutput } from "./taurpc/proxy";
   ```
 
 ## 1.8.2-canary.2

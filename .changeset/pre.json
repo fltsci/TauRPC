@@ -6,6 +6,7 @@
   },
   "changesets": [
     "bigint-rewrite-f64-not-opaque",
+    "bump-specta-rc-25",
     "calm-wombats-stand",
     "dprint-2025",
     "eslint-relax-dispatcher",
