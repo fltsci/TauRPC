@@ -1,5 +1,17 @@
 # taurpc
 
+## 2.0.0-canary.8
+
+### Patch Changes
+
+- [#31](https://github.com/fltsci/TauRPC/pull/31) [`e65f48e`](https://github.com/fltsci/TauRPC/commit/e65f48eff5cd8357f8c8232b63cee3827a0e0669) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Allow `Channel`s to be reused across multiple TauRPC command invocations.
+
+  Previously, when a command argument contained a `Channel<T>` and the runtime ran a transform pass (e.g. semantic-types decoding), the generated TS proxy mutated the original channel's `onmessage` handler in place. Passing the same channel to a second command (or any code path that re-invoked the proxy) would re-wrap the already-wrapped handler, double-decoding payloads.
+
+  The proxy now wraps via `new Channel((response) => v.onmessage(transform(response)))` instead of mutating, so the original channel is untouched and safe to reuse.
+
+  Generated bindings now import `Channel` from `@tauri-apps/api/core` whenever the affected transform path is reachable.
+
 ## 2.0.0-canary.7
 
 ### Patch Changes
@@ -94,11 +106,11 @@
     createTauRPCProxy,
     type InferCommandOutput,
     type Router,
-  } from './taurpc/bindings'
+  } from "./taurpc/bindings";
 
   // after
-  import type { Router } from './taurpc/bindings'
-  import { createTauRPCProxy, type InferCommandOutput } from './taurpc/proxy'
+  import type { Router } from "./taurpc/bindings";
+  import { createTauRPCProxy, type InferCommandOutput } from "./taurpc/proxy";
   ```
 
 ## 1.8.2-canary.2

@@ -5,6 +5,7 @@
     "@fltsci/taurpc": "1.8.1"
   },
   "changesets": [
+    "allow-channel-reuse",
     "bigint-rewrite-f64-not-opaque",
     "bump-specta-rc-25",
     "calm-wombats-stand",
