@@ -49,6 +49,10 @@ pub(super) fn export_types(
         .framework_runtime(move |mut exporter| {
             let mut out = String::new();
 
+            if requires_channel_transform(&functions, &exporter, &export_runtime_for_runtime) {
+                out.push_str("import { Channel } from '@tauri-apps/api/core';\n\n");
+            }
+
             out.push_str(&exporter.render_types()?);
 
             out.push_str(
@@ -379,6 +383,24 @@ fn apply_semantic_type_for_phase(
     }
 }
 
+fn requires_channel_transform(
+    functions: &BTreeMap<String, Vec<Function>>,
+    exporter: &FrameworkExporter,
+    export_runtime: &ExportRuntimeConfig,
+) -> bool {
+    if export_runtime.semantic_types.is_none() {
+        return false;
+    }
+
+    functions.values().flatten().any(|function| {
+        function.args().iter().any(|(_, arg_dt)| {
+            tauri_channel_reference(arg_dt, exporter.types)
+                .and_then(|channel| named_reference_generics(channel).first())
+                .is_some()
+        })
+    })
+}
+
 fn generate_transform_map(
     functions: &BTreeMap<String, Vec<Function>>,
     exporter: &FrameworkExporter,
@@ -418,7 +440,7 @@ fn generate_transform_map(
                     .filter(|runtime| runtime != "response")
                     .map(|runtime| {
                         format!(
-                            "{{ const transform = (response) => {runtime}; if (typeof v === \"function\") return (response) => v(transform(response)); const onmessage = v.onmessage; v.onmessage = (response) => onmessage(transform(response)); return v }}"
+                            "{{ const transform = (response) => {runtime}; if (typeof v === \"function\") return (response) => v(transform(response)); return new Channel((response) => v.onmessage(transform(response))) }}"
                         )
                     })
                 } else {
