@@ -429,7 +429,7 @@ fn generate_transform_map(
                         exporter.types,
                         export_runtime,
                     );
-                    apply_semantic_type_for_phase(
+                    let response_runtime = apply_semantic_type_for_phase(
                         &response_dt,
                         Phase::Deserialize,
                         "response",
@@ -437,12 +437,15 @@ fn generate_transform_map(
                         semantic_types,
                     )
                     .map(|(_, runtime)| runtime)
-                    .filter(|runtime| runtime != "response")
-                    .map(|runtime| {
-                        format!(
-                            "{{ const transform = (response) => {runtime}; if (typeof v === \"function\") return (response) => v(transform(response)); return new Channel((response) => v.onmessage(transform(response))) }}"
-                        )
-                    })
+                    .filter(|runtime| runtime != "response");
+                    response_runtime
+                        .map(|runtime| {
+                            let response_ts = exporter.inline(&response_dt)?;
+                            Ok::<String, Error>(format!(
+                                "(v: unknown) => {{ const transform = (response: {response_ts}) => {runtime}; if (typeof v === \"function\") {{ const cb = v as (r: unknown) => unknown; return (response: {response_ts}) => cb(transform(response)); }} const ch = v as {{ onmessage: (r: unknown) => void }}; return new Channel((response: {response_ts}) => ch.onmessage(transform(response))); }}"
+                            ))
+                        })
+                        .transpose()?
                 } else {
                     let dt = select_dt_for_config(
                         arg_dt,
@@ -453,16 +456,21 @@ fn generate_transform_map(
                     apply_semantic_type_for_phase(
                         &dt,
                         Phase::Serialize,
-                        "v",
+                        "t",
                         runtime_types,
                         semantic_types,
                     )
                     .map(|(_, runtime)| runtime)
-                    .filter(|runtime| runtime != "v")
+                    .filter(|runtime| runtime != "t")
+                    .map(|runtime| {
+                        let ts_type = exporter.inline(&dt)?;
+                        Ok::<String, Error>(typed_callback(&ts_type, &runtime))
+                    })
+                    .transpose()?
                 };
 
                 args.push(match transform {
-                    Some(transform) => format!("(v) => {transform}"),
+                    Some(transform) => transform,
                     None => "null".to_string(),
                 });
 
@@ -471,42 +479,61 @@ fn generate_transform_map(
                 let event_transform = apply_semantic_type_for_phase(
                     &event_dt,
                     Phase::Deserialize,
-                    "v",
+                    "t",
                     runtime_types,
                     semantic_types,
                 )
                 .map(|(_, runtime)| runtime)
-                .filter(|runtime| runtime != "v");
+                .filter(|runtime| runtime != "t")
+                .map(|runtime| {
+                    let ts_type = exporter.inline(&event_dt)?;
+                    Ok::<String, Error>(typed_callback(&ts_type, &runtime))
+                })
+                .transpose()?;
 
                 event_args.push(match event_transform {
-                    Some(transform) => format!("(v) => {transform}"),
+                    Some(transform) => transform,
                     None => "null".to_string(),
                 });
             }
 
-            let result = function.result().and_then(|dt| {
-                let dt = extract_std_result(dt, exporter.types)
-                    .map(|(ok, _)| ok)
-                    .unwrap_or(dt);
-                let dt = select_dt_for_config(dt, Phase::Serialize, exporter.types, export_runtime);
-                apply_semantic_type_for_phase(
-                    &dt,
-                    Phase::Deserialize,
-                    "v",
-                    runtime_types,
-                    semantic_types,
-                )
-                .map(|(_, runtime)| runtime)
-                .filter(|runtime| runtime != "v")
-            });
+            let result = function
+                .result()
+                .map(|result_dt| {
+                    let result_dt = extract_std_result(result_dt, exporter.types)
+                        .map(|(ok, _)| ok)
+                        .unwrap_or(result_dt);
+                    let result_dt = select_dt_for_config(
+                        result_dt,
+                        Phase::Serialize,
+                        exporter.types,
+                        export_runtime,
+                    );
+                    let runtime = apply_semantic_type_for_phase(
+                        &result_dt,
+                        Phase::Deserialize,
+                        "t",
+                        runtime_types,
+                        semantic_types,
+                    )
+                    .map(|(_, runtime)| runtime)
+                    .filter(|runtime| runtime != "t");
+                    Ok::<Option<(DataType, String)>, Error>(runtime.map(|r| (result_dt.clone(), r)))
+                })
+                .transpose()?
+                .flatten();
 
             if args.iter().any(|arg| arg != "null")
                 || event_args.iter().any(|arg| arg != "null")
                 || result.is_some()
             {
-                let result = result
-                    .map(|transform| format!("(v) => {transform}"))
-                    .unwrap_or_else(|| "null".to_string());
+                let result = match result {
+                    Some((result_dt, runtime)) => {
+                        let ts_type = exporter.inline(&result_dt)?;
+                        typed_callback(&ts_type, &runtime)
+                    }
+                    None => "null".to_string(),
+                };
                 methods.push(format!(
                     "{}: {{ args: [{}], eventArgs: [{}], result: {} }}",
                     serde_json::to_string(name)
@@ -529,6 +556,18 @@ fn generate_transform_map(
     }
 
     Ok(format!("{{ {} }}", routes.join(", ")))
+}
+
+/// Wrap a runtime expression as a strict-mode-clean transform callback.
+///
+/// The runtime API expects `(value: unknown) => unknown`, so we keep the
+/// outer parameter `unknown` (preserving contravariant assignability).
+/// Inside the body we narrow once via `const t = v as <ts_type>` so the
+/// runtime expression -- which references the bound identifier `t` and
+/// performs typed operations like `.map(...)` -- typechecks cleanly under
+/// `noImplicitAny` without per-callback escape hatches in consuming code.
+fn typed_callback(ts_type: &str, runtime: &str) -> String {
+    format!("(v: unknown) => {{ const t = v as {ts_type}; return {runtime}; }}")
 }
 
 fn select_dt_for_config(
