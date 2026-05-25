@@ -17,6 +17,7 @@
     "restore-preserve-order",
     "rust-toolchain-pin",
     "split-bindings-proxy",
+    "typed-transform-map-callbacks",
     "witty-guests-like"
   ]
 }

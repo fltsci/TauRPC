@@ -1,5 +1,13 @@
 # taurpc
 
+## 2.0.0-canary.9
+
+### Patch Changes
+
+- [#34](https://github.com/fltsci/TauRPC/pull/34) [`2f935c2`](https://github.com/fltsci/TauRPC/commit/2f935c2e57af26f5d2913df96a2f4ce0160176e1) Thanks [@johncarmack1984](https://github.com/johncarmack1984)! - Type the per-method callbacks in the generated `TRANSFORM_MAP` against the corresponding method types so the file no longer trips `noImplicitAny` in strict-mode consumers.
+
+  Outer parameter stays `unknown` (preserves contravariant assignability to the runtime's `TransformFn = (value: unknown) => unknown`); the body narrows once via `const t = v as <method-type>` and the existing runtime expression uses the typed binding.
+
 ## 2.0.0-canary.8
 
 ### Patch Changes
