@@ -518,9 +518,7 @@ fn generate_transform_map(
                     )
                     .map(|(_, runtime)| runtime)
                     .filter(|runtime| runtime != "t");
-                    Ok::<Option<(DataType, String)>, Error>(
-                        runtime.map(|r| (result_dt.clone(), r)),
-                    )
+                    Ok::<Option<(DataType, String)>, Error>(runtime.map(|r| (result_dt.clone(), r)))
                 })
                 .transpose()?
                 .flatten();
