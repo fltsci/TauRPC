@@ -328,7 +328,7 @@ impl ProceduresGenerator<'_> {
                 fn spawn(self) -> tokio::sync::broadcast::Sender<std::sync::Arc<tauri::ipc::Invoke<R>>> {
                     let (tx, mut rx) = tokio::sync::broadcast::channel(32);
 
-                    tokio::spawn(async move {
+                    tauri::async_runtime::spawn(async move {
                         while let Ok(invoke) = rx.recv().await {
                             if let Some(invoke) = std::sync::Arc::into_inner(invoke) {
                                 self.clone().handle_incoming_request(invoke);
