@@ -257,7 +257,7 @@ async fn main() {
         .merge(EventsImpl.into_handler());
 
     tauri::Builder::default()
-        .invoke_handler(router.into_handler())
+        .invoke_handler(router.into_handler().expect("failed to export types"))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
