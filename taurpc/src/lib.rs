@@ -288,7 +288,7 @@ impl<RT: Runtime> EventTrigger<RT> {
 ///     .merge(EventsImpl.into_handler());
 ///
 ///   tauri::Builder::default()
-///     .invoke_handler(router.into_handler())
+///     .invoke_handler(router.into_handler().expect("failed to export types"))
 ///     .run(tauri::generate_context!())
 ///     .expect("error while running tauri application");
 /// }
@@ -397,31 +397,30 @@ impl<R: Runtime> Router<R> {
     ///
     /// ```rust,ignore
     /// tauri::Builder::default()
-    ///     .invoke_handler(router.into_handler())
+    ///     .invoke_handler(router.into_handler().expect("failed to export types"))
     ///     .run(tauri::generate_context!())
     ///     .expect("error while running tauri application");
     /// ```
-    pub fn into_handler(self) -> impl Fn(Invoke<R>) -> bool {
+    ///
+    /// # Errors
+    ///
+    /// In development, when the types can't be exported.
+    pub fn into_handler(self) -> Result<impl Fn(Invoke<R>) -> bool, specta_typescript::Error> {
         // Only export in development mode and export_path not none
         if tauri::is_dev()
             && let Some(export_path) = self.export_path
         {
-            match export_types(
+            export_types(
                 export_path,
                 self.args_map_json.clone(),
                 self.export_config.clone(),
                 self.fns_map.clone(),
                 self.types.clone(),
                 self.export_runtime_config.clone(),
-            ) {
-                Ok(_) => (),
-                Err(e) => println!(
-                    "Error exporting types: {e:?}\ntaurpc will continue with router creation."
-                ),
-            };
+            )?;
         }
 
-        move |invoke: Invoke<R>| self.on_command(invoke)
+        Ok(move |invoke: Invoke<R>| self.on_command(invoke))
     }
 
     fn on_command(&self, invoke: Invoke<R>) -> bool {

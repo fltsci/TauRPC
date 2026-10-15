@@ -308,7 +308,7 @@ async fn main() {
     //     .expect("error while running tauri application");
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(router.into_handler())
+        .invoke_handler(router.into_handler().expect("failed to export types"))
         .setup(|app| {
             #[cfg(debug_assertions)]
             app.get_webview_window("main").unwrap().open_devtools();
