@@ -13,8 +13,9 @@ pub use specta_typescript::semantic;
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
-use std::{fmt::Debug, sync::Arc};
-use tokio::sync::broadcast::Sender;
+use std::fmt::Debug;
+use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::error::SendError;
 
 use serde::Serialize;
 use tauri::ipc::{Invoke, InvokeError};
@@ -73,9 +74,10 @@ pub trait TauRpcHandler<R: Runtime>: Sized {
     /// Handle a single incoming request
     fn handle_incoming_request(self, invoke: Invoke<R>);
 
-    /// Spawn a new `tokio` thread that listens for and handles incoming request through a `tokio::broadcast::channel`.
+    /// Spawn a task that handles incoming requests from an unbounded `tokio::sync::mpsc` channel.
+    /// The channel is unbounded so a burst of invokes queues instead of being dropped.
     /// This is used for when you have multiple handlers inside a router.
-    fn spawn(self) -> Sender<Arc<Invoke<R>>>;
+    fn spawn(self) -> UnboundedSender<Invoke<R>>;
 
     /// Returns a json object containing the arguments for the methods.
     /// This is used on the frontend to ensure the arguments are send with their correct idents to the backend.
@@ -296,7 +298,7 @@ impl<RT: Runtime> EventTrigger<RT> {
 #[derive(Default)]
 pub struct Router<R: Runtime> {
     types: Types,
-    handlers: HashMap<String, Sender<Arc<Invoke<R>>>>,
+    handlers: HashMap<String, UnboundedSender<Invoke<R>>>,
     export_path: Option<&'static str>,
     args_map_json: BTreeMap<String, String>,
     fns_map: BTreeMap<String, Vec<Function>>,
@@ -437,7 +439,12 @@ impl<R: Runtime> Router<R> {
 
         match self.handlers.get(&prefix.join(".")) {
             Some(handler) => {
-                let _ = handler.send(Arc::new(invoke));
+                if let Err(SendError(invoke)) = handler.send(invoke) {
+                    let cmd = invoke.message.command().to_string();
+                    invoke.resolver.invoke_error(InvokeError::from(format!(
+                        "`{cmd}` handler is not running"
+                    )));
+                }
             }
             None => invoke
                 .resolver

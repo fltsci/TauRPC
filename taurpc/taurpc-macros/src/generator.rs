@@ -325,14 +325,12 @@ impl ProceduresGenerator<'_> {
                     };
                 }
 
-                fn spawn(self) -> tokio::sync::broadcast::Sender<std::sync::Arc<tauri::ipc::Invoke<R>>> {
-                    let (tx, mut rx) = tokio::sync::broadcast::channel(32);
+                fn spawn(self) -> tokio::sync::mpsc::UnboundedSender<tauri::ipc::Invoke<R>> {
+                    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
                     tauri::async_runtime::spawn(async move {
-                        while let Ok(invoke) = rx.recv().await {
-                            if let Some(invoke) = std::sync::Arc::into_inner(invoke) {
-                                self.clone().handle_incoming_request(invoke);
-                            }
+                        while let Some(invoke) = rx.recv().await {
+                            self.clone().handle_incoming_request(invoke);
                         }
                     });
 
