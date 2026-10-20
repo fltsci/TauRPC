@@ -441,9 +441,9 @@ impl<R: Runtime> Router<R> {
             Some(handler) => {
                 if let Err(SendError(invoke)) = handler.send(invoke) {
                     let cmd = invoke.message.command().to_string();
-                    invoke.resolver.invoke_error(InvokeError::from(format!(
-                        "`{cmd}` handler is not running"
-                    )));
+                    invoke
+                        .resolver
+                        .invoke_error(InvokeError::from(format!("`{cmd}` handler is not running")));
                 }
             }
             None => invoke
